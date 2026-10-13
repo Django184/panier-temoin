@@ -80,6 +80,22 @@ function reponseSimulee(url, entetes) {
     ];
   }
   if (chemin.endsWith('/rpc/serie_prix')) return serie();
+  if (chemin.endsWith('/rpc/derniers_achats')) {
+    const achat = (produit_id, nom, unite, prix, precedent, promo = false) => ({
+      produit_id, nom, vendu_au_poids: unite === 'kg', unite, date_achat: '2026-10-12',
+      prix_normal_centimes: prix, prix_paye_centimes: promo ? Math.round(prix * 0.6) : prix, est_promo: promo,
+      precedent_prix_centimes: precedent, precedent_date: precedent ? '2026-09-28' : null,
+      variation_pct: precedent ? Math.round(((prix - precedent) * 1000) / precedent) / 10 : null,
+    });
+    return [
+      achat('p1', 'Agnesi Linguine N.10', 'piece', 240, 220, true),
+      achat('p2', 'Bio lentilles rouges', 'piece', 280, 280, true),
+      achat('p3', 'Bio Fairtrade bananes', 'kg', 295, 310),
+      achat('p4', 'MBud gnocchi', 'piece', 195, 185),
+      achat('p5', 'Bio Feta', 'piece', 320, null),
+      achat('p6', 'Pommes rou. douce Gala', 'kg', 280, 295),
+    ];
+  }
   if (chemin.endsWith('/rpc/comparaison_magasins')) {
     return [
       { magasin_id: 'm2', magasin_nom: 'M Morges Gare', localite: 'Morges', canton: 'VD', unite: 'piece', mediane_centimes: 235, dernier_prix_centimes: 240, dernier_releve: '2026-10-08', nb_releves: 7 },
@@ -115,7 +131,7 @@ function reponseSimulee(url, entetes) {
 
 const navigateur = await chromium.launch();
 
-async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true } = {}) {
+async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true, aides = false } = {}) {
   const contexte = await navigateur.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -124,12 +140,21 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
     serviceWorkers: 'block',
   });
   await contexte.addInitScript(
-    ([cle, valeurSession, valeurBrouillon, avecProjet]) => {
+    ([cle, valeurSession, valeurBrouillon, avecProjet, avecAides]) => {
+      if (sessionStorage.getItem('capture-pret')) return; // une seule fois par onglet
+      sessionStorage.setItem('capture-pret', '1');
       if (valeurSession) window.localStorage.setItem(cle, valeurSession);
       if (valeurBrouillon) window.localStorage.setItem('panier-temoin:brouillon', valeurBrouillon);
-      if (avecProjet) window.localStorage.setItem('panier-temoin:projet-claude', 'https://claude.ai/project/00000000-0000-4000-8000-000000000000');
+      if (avecProjet) {
+        window.localStorage.setItem('panier-temoin:projet-claude', 'https://claude.ai/project/00000000-0000-4000-8000-000000000000');
+        window.localStorage.setItem('panier-temoin:projet-chef-feta', 'https://claude.ai/project/11111111-0000-4000-8000-000000000000');
+      }
+      window.localStorage.setItem(
+        'panier-temoin:preferences',
+        JSON.stringify(avecAides ? { aides: true, aidesVues: [] } : { aides: true, aidesVues: ['ajouter', 'courses'] }),
+      );
     },
-    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet],
+    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet, aides],
   );
   await contexte.route(`https://${REF}.supabase.co/**`, async (route) => {
     const requete = route.request();
@@ -157,64 +182,87 @@ const reprendre = async (page) => {
   await page.getByRole('button', { name: 'Reprendre' }).click();
 };
 
-await capturer('01-accueil');
-await capturer('02-connexion', { connecte: false, chemin: 'connexion' });
-await capturer('03-nouveau-ticket', { chemin: 'ajouter' });
-await capturer('03b-projet-claude', {
-  chemin: 'ajouter',
-  projet: false,
-  action: async (page) => {
-    await page.getByRole('button', { name: 'Configurer le projet Claude' }).click();
-  },
-});
-// Lien « Ouvrir dans Panier Témoin » tel que Claude l'écrit.
+// Lien « Ajouter à ma liste de courses » tel que Chef Feta l'écrit.
+const LIEN_COURSES = '#/courses/' + JSON.stringify({
+  r: 'Poulet sauté façon teriyaki',
+  p: 4,
+  m: 'Préparation : 15 min · Cuisson : 20 min · Toutes saisons',
+  i: [
+    ['Légumes', '250 g de champignons de Paris'], ['Légumes', '2 carottes moyennes'], ['Légumes', '1 oignon rouge'],
+    ['Légumes', "2 gousses d'ail"], ['Viandes et poissons', '700 g de blancs de poulet (ou cuisses désossées)'],
+    ['Fruits secs', '1 cas de graines de sésame (optionnel)'], ['Bocaux', '3 cas de miel (?)'],
+    ['Bocaux', '1,5 cas de vinaigre de riz'], ['Pâtes', '300 g de riz basmati'], ['Pâtes', '1,5 cac de maïzena'],
+    ['Produits asiatiques et Tex-Mex', '6 cas de sauce soja'], ['Placard — à vérifier', "1 cas d'huile neutre"],
+  ],
+  e: [
+    'Lance le riz selon les instructions du paquet.',
+    "**Sauce :** dans un bol, mélange la sauce soja, le miel, le vinaigre, l'ail pressé et la maïzena.",
+    "**Poulet :** chauffe l'huile à feu vif et saisis le poulet 5 à 6 min sans trop remuer. Réserve.",
+    "**Légumes :** fais revenir l'oignon 2 min, ajoute les carottes 3 min puis les champignons 4 min.",
+    '**Laquage :** remets le poulet, verse la sauce et laisse caraméliser 2 à 3 min.',
+  ],
+  a: ['Laisse les champignons bien colorer avant de remettre le poulet.', 'Variante sans viande : 400 g de tofu ferme et 250 g d’edamame.'],
+  n: 'Protéines ~40 g | Glucides ~57 g | Lipides ~8 g | ~465 kcal',
+}).replaceAll('%', '%25').replaceAll(' ', '%20').replaceAll('#', '%23').replaceAll('(', '%28').replaceAll(')', '%29');
+const cocherDeux = async (page) => {
+  const cases = page.locator('.article-courses input');
+  await cases.nth(0).check();
+  await cases.nth(4).check();
+};
+// Lien « Ouvrir dans Panier Témoin » tel que Claude l'écrit pour un ticket.
 const LIEN_IMPORT = '#/import/' + JSON.stringify({
   f: '064590', m: 'MM Métropole Renens', l: 'Renens', c: 'Vaud', d: '2026-10-12', h: '19:00:05', t: '12.75', e: '4.00',
   a: [['Agnesi Linguine N.10', '3', '2.40', '2.88', '4.32'], ['Bio lentilles rouges', '2', '2.80', '1.12', '4.48'], ['MBud gnocchi', '1', '1.95', '', '1.95'], ['Aubergines', '1', '4.00', '', '2.00']],
 }).replaceAll(' ', '%20');
-await capturer('03c-retour-de-claude', { chemin: LIEN_IMPORT.slice(2) });
-await capturer('04-verification', { chemin: 'ajouter', brouillon: brouillonDemo(), action: reprendre });
-await capturer('05-verification-ligne-ouverte', {
-  chemin: 'ajouter',
-  brouillon: brouillonDemo(),
+
+await capturer('01-courses', { chemin: LIEN_COURSES.slice(2), action: cocherDeux });
+await capturer('02-courses-modifier', {
+  chemin: LIEN_COURSES.slice(2),
   action: async (page) => {
-    await reprendre(page);
-    await page.locator('.ligne-a-verifier .ligne-rangee').first().click();
+    await page.getByRole('button', { name: 'Modifier' }).click();
   },
 });
-// Lien « Ajouter à ma liste de courses » tel que Chef Feta l'écrit.
-const LIEN_COURSES = '#/courses/' + JSON.stringify({
-  r: 'Poulet sauté façon teriyaki',
-  i: [
-    ['Légumes', '250 g de champignons de Paris'], ['Légumes', '2 carottes moyennes'], ['Légumes', '1 oignon rouge'],
-    ['Viandes et poissons', '700 g de blancs de poulet'], ['Fruits secs', '1 cas de graines de sésame (optionnel)'],
-    ['Bocaux', '3 cas de miel (?)'], ['Pâtes', '300 g de riz basmati'], ['Produits asiatiques et Tex-Mex', '6 cas de sauce soja'],
-    ['Placard — à vérifier', "1 cas d'huile neutre"],
-  ],
-}).replaceAll(' ', '%20').replaceAll('(', '%28').replaceAll(')', '%29');
-const cocherDeux = async (page) => {
-  const cases = page.locator('.article-courses input');
-  await cases.nth(0).check();
-  await cases.nth(3).check();
-};
-await capturer('10-courses', { chemin: LIEN_COURSES.slice(2), action: cocherDeux });
-await capturer('11-carte-cumulus', { chemin: 'cumulus' });
-await capturer('11b-carte-cumulus-code-barres', {
-  chemin: 'cumulus',
+await capturer('03-courses-premiere-fois', { chemin: 'courses', projet: false, aides: true });
+await capturer('04-recette', {
+  chemin: LIEN_COURSES.slice(2),
   action: async (page) => {
-    await page.getByRole('radio', { name: 'Code-barres' }).click();
+    await page.getByRole('link', { name: 'Recette' }).click();
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: 'Une personne de moins' }).click();
+    await page.getByRole('button', { name: 'Une personne de moins' }).click();
   },
 });
-await capturer('12-courses-sombre', { theme: 'dark', chemin: LIEN_COURSES.slice(2), action: cocherDeux });
-await capturer('06-explorer', {
-  chemin: 'explorer',
+await capturer('05-recette-modifier', {
+  chemin: LIEN_COURSES.slice(2),
   action: async (page) => {
-    await page.getByRole('searchbox').fill('lin');
-    await page.waitForTimeout(700);
+    await page.getByRole('link', { name: 'Recette' }).click();
+    await page.waitForTimeout(300);
+    await page.getByRole('button', { name: 'Modifier' }).click();
   },
 });
-await capturer('07-fiche-produit', { chemin: 'produit/p1' });
-await capturer('08-verification-sombre', { theme: 'dark', chemin: 'ajouter', brouillon: brouillonDemo(), action: reprendre });
-await capturer('09-fiche-produit-sombre', { theme: 'dark', chemin: 'produit/p1' });
+await capturer('06-carte', { chemin: 'carte' });
+await capturer('07-carte-code-barres', {
+  chemin: 'carte',
+  action: async (page) => {
+    await page.locator('.carrousel').evaluate((el) => el.scrollTo({ left: el.clientWidth }));
+  },
+});
+await capturer('08-ticket', { chemin: 'ajouter' });
+await capturer('09-ticket-premiere-fois', { chemin: 'ajouter', projet: false, aides: true });
+await capturer('10-retour-de-claude', { chemin: LIEN_IMPORT.slice(2) });
+await capturer('11-verification', { chemin: 'ajouter', brouillon: brouillonDemo(), action: reprendre });
+await capturer('12-prix', { chemin: 'explorer' });
+await capturer('13-fiche-produit', { chemin: 'produit/p1' });
+await capturer('14-reglages', { chemin: 'reglages' });
+await capturer('15-reglages-deconnecte', { connecte: false, chemin: 'reglages' });
+await capturer('16-courses-sombre', { theme: 'dark', chemin: LIEN_COURSES.slice(2), action: cocherDeux });
+await capturer('17-recette-sombre', {
+  theme: 'dark',
+  chemin: LIEN_COURSES.slice(2),
+  action: async (page) => {
+    await page.getByRole('link', { name: 'Recette' }).click();
+  },
+});
+await capturer('18-prix-sombre', { theme: 'dark', chemin: 'explorer' });
 
 await navigateur.close();

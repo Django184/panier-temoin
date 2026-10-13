@@ -99,18 +99,3 @@ export function prendreRetour(): Retour | null {
   effacerRetour();
   return retour;
 }
-
-/**
- * Lit le presse-papiers sans geste de l'utilisateur, seulement si le
- * navigateur l'a déjà autorisé (Chrome sur Android après un premier
- * « Coller »). Ailleurs, renvoie null sans rien demander.
- */
-export async function lirePressePapiersSiAutorise(): Promise<string | null> {
-  try {
-    const etat = await navigator.permissions.query({ name: 'clipboard-read' as PermissionName });
-    if (etat.state !== 'granted') return null;
-    return await navigator.clipboard.readText();
-  } catch {
-    return null;
-  }
-}

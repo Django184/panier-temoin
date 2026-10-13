@@ -547,6 +547,37 @@ exception when raise_exception then
 end $$;
 
 -- =====================================================================
+-- 12 bis. Derniers achats et tendance
+-- =====================================================================
+reset role;
+set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+do $$
+declare
+  r record;
+  n integer := 0;
+begin
+  for r in select * from public.derniers_achats(100) loop
+    n := n + 1;
+    if r.precedent_prix_centimes is not null
+       and r.variation_pct <> round((r.prix_normal_centimes - r.precedent_prix_centimes) * 100.0 / r.precedent_prix_centimes, 1) then
+      raise exception 'ÉCHEC : tendance fausse pour %', r.nom;
+    end if;
+    if r.precedent_date is not null and r.precedent_date >= r.date_achat then
+      raise exception 'ÉCHEC : achat précédent pas antérieur pour %', r.nom;
+    end if;
+  end loop;
+  perform pg_temp.verifier(n > 0, 'derniers achats lisibles sans compte, tendances cohérentes');
+  perform pg_temp.verifier(
+    (select precedent_prix_centimes is not null
+       from public.derniers_achats(100) where produit_id = current_setting('test.variable')::uuid),
+    'derniers achats : le produit acheté plusieurs fois a un prix précédent');
+end $$;
+
+reset role;
+set local role authenticated;
+
+-- =====================================================================
 -- 12. Carte Cumulus partagée : comptes connectés seulement
 -- =====================================================================
 reset role;
@@ -596,4 +627,4 @@ end $$;
 rollback;
 
 -- Atteint seulement si aucune vérification n'a échoué.
-select 'Tous les tests sont passés (58 vérifications)' as resultat;
+select 'Tous les tests sont passés (60 vérifications)' as resultat;

@@ -1,18 +1,22 @@
-// Cadre de l'app : écran courant et barre d'onglets.
+// Cadre de l'app : écran courant et barre d'onglets. L'onglet Recette
+// n'apparaît que lorsqu'une recette a des articles dans la liste.
 
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useChemin, lien } from './routeur.ts';
 import { useSession } from './session.tsx';
-import { Accueil } from './ecrans/Accueil.tsx';
 import { Ajouter } from './ecrans/Ajouter.tsx';
 import { Connexion } from './ecrans/Connexion.tsx';
 import { Explorer } from './ecrans/Explorer.tsx';
 import { FicheProduit } from './ecrans/FicheProduit.tsx';
 import { DetailPanier, Paniers } from './ecrans/Paniers.tsx';
-import { Profil } from './ecrans/Profil.tsx';
+import { Reglages } from './ecrans/Reglages.tsx';
 import { Courses } from './ecrans/Courses.tsx';
+import { Recette } from './ecrans/Recette.tsx';
 import { CarteCumulus } from './ecrans/CarteCumulus.tsx';
 import { BandeauMiseAJour } from './composants/BandeauMiseAJour.tsx';
+import { IconeCarte, IconePanier, IconeReglages, IconeTendance, IconeTicket, IconeToque } from './composants/Icones.tsx';
+import { useRecettesDeLaListe } from './donnees/local.ts';
+import { lignesAVerifier } from './api.ts';
 
 function Reserve({ raison, children }: { raison: string; children: ReactNode }) {
   const { session, chargement } = useSession();
@@ -26,99 +30,83 @@ function Ecran({ chemin }: { chemin: string[] }) {
   switch (racine) {
     case undefined:
     case '':
-      return <Accueil />;
-    case 'explorer':
-      return <Explorer />;
-    case 'produit':
-      return id ? <FicheProduit key={id} id={id} /> : <Explorer />;
-    case 'ajouter':
-      return (
-        <Reserve raison="Connectez-vous pour ajouter un ticket.">
-          <Ajouter />
-        </Reserve>
-      );
-    case 'paniers':
-      return (
-        <Reserve raison="Connectez-vous pour composer des paniers types.">
-          {id ? <DetailPanier key={id} id={id} /> : <Paniers />}
-        </Reserve>
-      );
-    case 'profil':
-      return (
-        <Reserve raison="Connectez-vous pour voir vos tickets.">
-          <Profil />
-        </Reserve>
-      );
     case 'courses':
       return <Courses />;
+    case 'recette':
+      return <Recette />;
+    case 'carte':
     case 'cumulus':
       return (
         <Reserve raison="Connectez-vous pour afficher la carte Cumulus du foyer.">
           <CarteCumulus />
         </Reserve>
       );
+    case 'ajouter':
+      return (
+        <Reserve raison="Connectez-vous pour ajouter un ticket.">
+          <Ajouter />
+        </Reserve>
+      );
+    case 'explorer':
+      return <Explorer />;
+    case 'produit':
+      return id ? <FicheProduit key={id} id={id} /> : <Explorer />;
+    case 'paniers':
+      return (
+        <Reserve raison="Connectez-vous pour composer des paniers types.">
+          {id ? <DetailPanier key={id} id={id} /> : <Paniers />}
+        </Reserve>
+      );
+    case 'reglages':
+    case 'profil':
+      return <Reglages />;
     case 'import':
       // Lien envoyé par Claude : l'app passe aussitôt à « Ajouter ».
       return <div className="ecran"><p className="discret">Ouverture du ticket…</p></div>;
     case 'connexion':
-      return session ? <Accueil /> : <Connexion />;
+      return session ? <Courses /> : <Connexion />;
     default:
       return <div className="ecran"><p className="vide">Cette page n’existe pas.</p></div>;
   }
 }
 
-const ONGLETS: Array<{ cle: string; titre: string; icone: ReactNode }> = [
-  {
-    cle: '',
-    titre: 'Accueil',
-    icone: <path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z" />,
-  },
-  {
-    cle: 'explorer',
-    titre: 'Explorer',
-    icone: (
-      <>
-        <circle cx="11" cy="11" r="6" />
-        <path d="m16 16 4 4" />
-      </>
-    ),
-  },
-  {
-    cle: 'ajouter',
-    titre: 'Ajouter',
-    icone: (
-      <>
-        <path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5L6 21z" />
-        <path d="M12 8v6M9 11h6" />
-      </>
-    ),
-  },
-  {
-    cle: 'courses',
-    titre: 'Courses',
-    icone: (
-      <>
-        <path d="M3 9h18l-2 11H5z" />
-        <path d="m8 9 4-5 4 5" />
-      </>
-    ),
-  },
-  {
-    cle: 'profil',
-    titre: 'Profil',
-    icone: (
-      <>
-        <circle cx="12" cy="8" r="4" />
-        <path d="M4 21c1-4 4-6 8-6s7 2 8 6" />
-      </>
-    ),
-  },
-];
+/** Onglet actif pour chaque écran. */
+const PARENT: Record<string, string> = {
+  '': 'courses',
+  produit: 'explorer',
+  paniers: 'explorer',
+  cumulus: 'carte',
+  profil: 'reglages',
+  connexion: 'reglages',
+};
 
 export function App() {
   const chemin = useChemin();
-  const ONGLET_PARENT: Record<string, string> = { produit: 'explorer', paniers: 'explorer', cumulus: 'courses' };
-  const actif = ONGLET_PARENT[chemin[0] ?? ''] ?? chemin[0] ?? '';
+  const { session } = useSession();
+  const avecRecette = useRecettesDeLaListe().length > 0;
+  const [aVerifier, setAVerifier] = useState(0);
+  const racine = chemin[0] ?? '';
+  const actif = PARENT[racine] ?? racine;
+
+  // Pastille sur Réglages quand des prix attendent une confirmation.
+  useEffect(() => {
+    if (!session) {
+      setAVerifier(0);
+      return;
+    }
+    lignesAVerifier()
+      .then((l) => setAVerifier(l.length))
+      .catch(() => undefined);
+  }, [session, racine]);
+
+  const onglets: Array<{ cle: string; titre: string; icone: ReactNode; pastille?: boolean }> = [
+    { cle: 'courses', titre: 'Courses', icone: <IconePanier className="onglet-icone" /> },
+    ...(avecRecette ? [{ cle: 'recette', titre: 'Recette', icone: <IconeToque className="onglet-icone" /> }] : []),
+    { cle: 'carte', titre: 'Carte', icone: <IconeCarte className="onglet-icone" /> },
+    { cle: 'ajouter', titre: 'Ticket', icone: <IconeTicket className="onglet-icone onglet-icone-stylo" /> },
+    { cle: 'explorer', titre: 'Prix', icone: <IconeTendance className="onglet-icone" /> },
+    { cle: 'reglages', titre: 'Réglages', icone: <IconeReglages className="onglet-icone" />, pastille: aVerifier > 0 },
+  ];
 
   return (
     <>
@@ -126,17 +114,18 @@ export function App() {
       <main className="contenu">
         <Ecran chemin={chemin} />
       </main>
-      <nav className="onglets" aria-label="Navigation principale">
-        {ONGLETS.map((o) => (
+      <nav className="onglets" aria-label="Navigation principale" style={{ gridTemplateColumns: `repeat(${onglets.length}, 1fr)` }}>
+        {onglets.map((o) => (
           <a
             key={o.cle}
-            href={o.cle ? lien(o.cle) : '#/'}
-            className={`onglet ${o.cle === 'ajouter' ? 'onglet-ajouter' : ''} ${actif === o.cle ? 'actif' : ''}`}
+            href={lien(o.cle)}
+            className={`onglet ${actif === o.cle ? 'actif' : ''}`}
             aria-current={actif === o.cle ? 'page' : undefined}
           >
-            <svg viewBox="0 0 24 24" aria-hidden="true" className="onglet-icone">
+            <span className="onglet-icone-cadre">
               {o.icone}
-            </svg>
+              {o.pastille ? <span className="pastille-onglet" aria-label="Prix à confirmer" /> : null}
+            </span>
             <span>{o.titre}</span>
           </a>
         ))}

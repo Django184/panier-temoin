@@ -3,11 +3,10 @@
 // Gardée dans la base (comptes connectés seulement) et copiée sur le
 // téléphone pour s'afficher même sans réseau au magasin.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { carteLocale, enregistrerCarteCumulus, lireCarteCumulus, supprimerCarteCumulus, type Carte } from '../api.ts';
 import { CodeAztec, CodeBarres } from '../composants/CodesCarte.tsx';
 import { ean13Valide } from '../lib/ean13.ts';
-import { lien } from '../routeur.ts';
 
 /** Garde l'écran allumé tant que la carte est affichée (si le navigateur le permet). */
 function useEcranAllume(actif: boolean) {
@@ -37,20 +36,22 @@ function useEcranAllume(actif: boolean) {
   }, [actif]);
 }
 
-type Format = 'aztec' | 'barres';
-
 export function CarteCumulus() {
   const [carte, setCarte] = useState<Carte | null>(carteLocale);
   const [chargement, setChargement] = useState(carte === null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [modifier, setModifier] = useState(false);
-  const [format, setFormat] = useState<Format>('aztec');
+  const [diapo, setDiapo] = useState(0);
+  const carrousel = useRef<HTMLDivElement>(null);
 
   const aztec = carte?.code ?? null;
   const numero = carte?.numero && ean13Valide(carte.numero) ? carte.numero : null;
-  const formatAffiche: Format | null = format === 'aztec' ? (aztec ? 'aztec' : numero ? 'barres' : null) : numero ? 'barres' : aztec ? 'aztec' : null;
+  const diapos = [
+    ...(aztec ? [{ nom: 'Code Aztec', code: <CodeAztec texte={aztec} />, barres: false }] : []),
+    ...(numero ? [{ nom: 'Code-barres', code: <CodeBarres numero={numero} />, barres: true }] : []),
+  ];
 
-  useEcranAllume(formatAffiche !== null && !modifier);
+  useEcranAllume(diapos.length > 0 && !modifier);
 
   useEffect(() => {
     lireCarteCumulus()
@@ -62,12 +63,14 @@ export function CarteCumulus() {
       .finally(() => setChargement(false));
   }, []);
 
+  const allerA = (i: number) => {
+    const el = carrousel.current;
+    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
+  };
+
   return (
     <div className="ecran ecran-carte">
-      <header className="entete-ecran">
-        <h1>Carte Cumulus</h1>
-        <p className="discret">À présenter à la caisse. Visible seulement par les comptes connectés.</p>
-      </header>
+      <h1>Carte Cumulus</h1>
 
       {erreur ? (
         <p className="erreur" role="alert">
@@ -75,34 +78,40 @@ export function CarteCumulus() {
         </p>
       ) : null}
 
-      {formatAffiche && !modifier ? (
+      {diapos.length > 0 && !modifier ? (
         <>
-          {aztec && numero ? (
-            <div className="segments segments-larges" role="radiogroup" aria-label="Format du code">
-              <button type="button" role="radio" aria-checked={formatAffiche === 'aztec'} className={`interrupteur ${formatAffiche === 'aztec' ? 'actif' : ''}`} onClick={() => setFormat('aztec')}>
-                Code Aztec
-              </button>
-              <button type="button" role="radio" aria-checked={formatAffiche === 'barres'} className={`interrupteur ${formatAffiche === 'barres' ? 'actif' : ''}`} onClick={() => setFormat('barres')}>
-                Code-barres
-              </button>
+          <div
+            ref={carrousel}
+            className="carrousel"
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              setDiapo(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
+            }}
+          >
+            {diapos.map((d) => (
+              <div key={d.nom} className="diapo" aria-label={d.nom}>
+                <div className={`carte-code ${d.barres ? 'carte-code-barres' : ''}`}>
+                  {d.code}
+                  <p className="carte-code-legende">Cumulus</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          {diapos.length > 1 ? (
+            <div className="points-carrousel" role="tablist" aria-label="Format du code">
+              {diapos.map((d, i) => (
+                <button key={d.nom} type="button" role="tab" aria-selected={diapo === i} className={diapo === i ? 'actif' : ''} onClick={() => allerA(i)}>
+                  {d.nom}
+                </button>
+              ))}
             </div>
           ) : null}
-          <div className={`carte-code ${formatAffiche === 'barres' ? 'carte-code-barres' : ''}`}>
-            {formatAffiche === 'aztec' && aztec ? <CodeAztec texte={aztec} /> : numero ? <CodeBarres numero={numero} /> : null}
-            <p className="carte-code-legende">Cumulus</p>
-          </div>
-          <p className="discret centre">
-            Montez la luminosité de l’écran si la caisse ne lit pas le code
-            {aztec && numero ? ', ou essayez l’autre format' : ''}.
+          <p className="discret centre aide-carte">
+            {diapos.length > 1 ? 'Balayez pour changer de format. ' : ''}Montez la luminosité si la caisse ne lit pas le code.
           </p>
-          <div className="actions">
-            <a className="bouton-secondaire" href={lien('courses')}>
-              Liste de courses
-            </a>
-            <button type="button" className="bouton-lien" onClick={() => setModifier(true)}>
-              Modifier la carte
-            </button>
-          </div>
+          <button type="button" className="bouton-lien lien-bas" onClick={() => setModifier(true)}>
+            Modifier la carte
+          </button>
         </>
       ) : chargement ? (
         <p className="discret">Chargement…</p>

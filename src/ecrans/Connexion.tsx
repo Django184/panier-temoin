@@ -5,7 +5,7 @@ import { useState, type FormEvent } from 'react';
 import { connecter } from '../api.ts';
 import { MENTION_NON_AFFILIATION } from '../config.ts';
 
-export function Connexion({ raison }: { raison?: string }) {
+export function Connexion({ raison, integre = false }: { raison?: string; integre?: boolean }) {
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
   const [etat, setEtat] = useState<'repos' | 'en_cours'>('repos');
@@ -24,9 +24,10 @@ export function Connexion({ raison }: { raison?: string }) {
     }
   };
 
+  const Titre = integre ? 'h2' : 'h1';
   return (
-    <div className="ecran ecran-etroit">
-      <h1>Se connecter</h1>
+    <div className={integre ? 'bloc-connexion' : 'ecran ecran-etroit'}>
+      <Titre>Se connecter</Titre>
       <p>{raison ?? 'Connectez-vous pour ajouter des tickets.'}</p>
       <form onSubmit={envoyer} className="formulaire">
         <label className="champ champ-large">
@@ -51,7 +52,7 @@ export function Connexion({ raison }: { raison?: string }) {
       <p className="discret">
         Pas de compte ? Les comptes sont réservés aux contributeurs. La consultation des prix reste ouverte à tous.
       </p>
-      <p className="discret">{MENTION_NON_AFFILIATION}</p>
+      {integre ? null : <p className="discret">{MENTION_NON_AFFILIATION}</p>}
     </div>
   );
 }

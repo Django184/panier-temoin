@@ -184,8 +184,9 @@ p {
   min-height: var(--onglets);
   color: var(--encre-2);
   text-decoration: none;
-  font-size: 0.72rem;
-  font-weight: 550;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .onglet-icone {
@@ -213,7 +214,7 @@ p {
   background: var(--stylo);
 }
 
-.onglet-ajouter .onglet-icone {
+.onglet-icone-stylo {
   stroke: var(--stylo);
 }
 
@@ -1173,17 +1174,6 @@ mark.exemple-douteux {
    Accueil et bandeau
    --------------------------------------------------------------------- */
 
-.entete-accueil h1 {
-  font-size: 2.25rem;
-  letter-spacing: -0.03em;
-}
-
-.entete-accueil p {
-  margin-top: 0.5rem;
-  max-width: 32em;
-  color: var(--encre-2);
-}
-
 .mention {
   margin-top: 2.5rem;
   font-size: 0.8rem;
@@ -1227,56 +1217,6 @@ mark.exemple-douteux {
 /* ---------------------------------------------------------------------
    Accès rapides (accueil, liste de courses)
    --------------------------------------------------------------------- */
-
-.tuiles-acces {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-}
-
-.tuile-acces {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.6rem;
-  min-height: 92px;
-  padding: 0.9rem 1rem;
-  border: 1px solid var(--trait-fort);
-  border-radius: var(--rayon);
-  background: var(--surface);
-  color: var(--encre);
-  font: inherit;
-  font-weight: 650;
-  text-align: left;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.tuile-sombre {
-  background: var(--encre);
-  border-color: var(--encre);
-  color: var(--papier);
-}
-
-.tuile-acces:active {
-  transform: translateY(1px);
-}
-
-.icone-tuile {
-  width: 28px;
-  height: 28px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.7;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.icone-tuile .plein {
-  fill: currentColor;
-  stroke: none;
-}
 
 .entete-avec-lien {
   display: flex;
@@ -1481,4 +1421,825 @@ mark.exemple-douteux {
 
 .reglages[open] > summary {
   margin-bottom: 0.75rem;
+}
+
+
+/* =====================================================================
+   Navigation et éléments communs
+   ===================================================================== */
+
+.onglet-icone-cadre {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.pastille-onglet {
+  position: absolute;
+  top: -2px;
+  right: -5px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ambre);
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.icone {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.icone-petite {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.icone-discrete {
+  opacity: 0.65;
+}
+
+.entete-avec-action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.entete-avec-action p {
+  margin: 0.25rem 0 0;
+}
+
+.bouton-discret {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: none;
+  min-height: 36px;
+  margin-top: 0.3rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--encre-2);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bouton-discret.actif {
+  border-color: var(--stylo);
+  background: var(--stylo-fond);
+  color: var(--stylo);
+}
+
+.aide {
+  padding: 0.9rem 1rem 1rem;
+  border-radius: var(--rayon);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-left: 3px solid var(--stylo);
+}
+
+.aide-entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+}
+
+.aide-entete h2 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.aide .etapes {
+  font-size: 0.92rem;
+}
+
+.carte-config {
+  padding: 1rem;
+  border-radius: var(--rayon);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+}
+
+.carte-config > h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.carte-config > p {
+  margin: 0 0 0.9rem;
+}
+
+.titre-section {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--encre-2);
+}
+
+.note-bas {
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+}
+
+/* =====================================================================
+   Courses
+   ===================================================================== */
+
+.actions-courses {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.actions-courses > * {
+  flex: 1;
+}
+
+.historique {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--rayon);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  overflow: hidden;
+}
+
+.historique li + li {
+  border-top: 1px solid var(--trait);
+}
+
+.historique-recette {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.1rem 0.75rem;
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border: 0;
+  background: none;
+  color: var(--encre);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.historique-titre {
+  font-weight: 650;
+}
+
+.historique-detail {
+  grid-column: 1;
+  font-size: 0.8rem;
+  color: var(--encre-2);
+}
+
+.historique-etat {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: var(--stylo);
+}
+
+.historique-etat.present {
+  color: var(--vert);
+}
+
+.article-edition {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.35rem 0.35rem 0.6rem;
+}
+
+.article-edition input {
+  flex: 1;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--encre);
+  font: inherit;
+}
+
+/* =====================================================================
+   Recette
+   ===================================================================== */
+
+.choix-recettes {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  margin: 0 -1rem;
+  padding: 0 1rem 0.25rem;
+  scrollbar-width: none;
+}
+
+.puce-recette {
+  flex: none;
+  max-width: 70vw;
+  min-height: 36px;
+  padding: 0.3rem 0.9rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--encre-2);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.puce-recette.actif {
+  border-color: var(--encre);
+  background: var(--encre);
+  color: var(--papier);
+}
+
+.titre-recette {
+  font-size: 1.6rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.portions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.3rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.portions-valeur {
+  min-width: 7.5rem;
+  text-align: center;
+}
+
+.portions-valeur strong {
+  font-family: var(--chiffres);
+  font-size: 1.1rem;
+}
+
+.bouton-rond {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--stylo-fond);
+  color: var(--stylo);
+  font: inherit;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.bandeau-maj {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--rayon);
+  background: var(--surligneur);
+  color: var(--encre);
+}
+
+.bandeau-maj p {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-weight: 550;
+}
+
+.bloc-recette > h2 {
+  margin: 0 0 0.6rem;
+  font-size: 1.15rem;
+}
+
+.ingredients-rayon + .ingredients-rayon {
+  margin-top: 0.8rem;
+}
+
+.ingredients {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ingredients li {
+  position: relative;
+  padding: 0.3rem 0 0.3rem 1rem;
+}
+
+.ingredients li::before {
+  content: '';
+  position: absolute;
+  left: 0.15rem;
+  top: 0.95rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--encre-2);
+}
+
+.etapes-recette {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: etape;
+}
+
+.etapes-recette li {
+  position: relative;
+  padding-left: 2.6rem;
+  counter-increment: etape;
+  line-height: 1.6;
+}
+
+.etapes-recette li + li {
+  margin-top: 1rem;
+}
+
+.etapes-recette li::before {
+  content: counter(etape);
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--encre);
+  color: var(--papier);
+  font-family: var(--chiffres);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.astuces {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.astuces li {
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+}
+
+.astuces li + li {
+  margin-top: 0.5rem;
+}
+
+.nutrition {
+  margin: 0;
+  font-family: var(--chiffres);
+  font-size: 0.9rem;
+}
+
+.edition-recette > * + * {
+  margin-top: 1rem;
+}
+
+.grille-deux {
+  display: grid;
+  grid-template-columns: 7rem 1fr;
+  gap: 0.75rem;
+}
+
+.groupe-edition {
+  margin: 0;
+  padding: 0.75rem;
+  border: 1px solid var(--trait);
+  border-radius: var(--rayon);
+  background: var(--surface);
+}
+
+.groupe-edition legend {
+  padding: 0 0.35rem;
+  font-weight: 700;
+}
+
+.ligne-edition {
+  display: grid;
+  grid-template-columns: 1fr 7.5rem auto;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.ligne-edition + .ligne-edition {
+  margin-top: 0.45rem;
+}
+
+.ligne-edition-texte {
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+}
+
+.ligne-edition input,
+.ligne-edition select,
+.ligne-edition textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--encre);
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.ligne-edition select {
+  font-size: 0.8rem;
+}
+
+.ligne-edition textarea {
+  resize: vertical;
+}
+
+.numero-etape {
+  width: 1.6rem;
+  padding-top: 0.55rem;
+  text-align: center;
+  font-family: var(--chiffres);
+  font-weight: 700;
+  color: var(--encre-2);
+}
+
+.bouton-ajout {
+  margin-top: 0.6rem;
+  min-height: 40px;
+  padding: 0.3rem 0.8rem;
+  border: 1px dashed var(--trait-fort);
+  border-radius: 8px;
+  background: none;
+  color: var(--stylo);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.pied-edition {
+  position: sticky;
+  bottom: calc(var(--onglets) + env(safe-area-inset-bottom) + 0.5rem);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  padding: 0.6rem;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--papier) 88%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 20px rgb(0 0 0 / 0.12);
+}
+
+/* =====================================================================
+   Carte Cumulus : balayage entre les deux formats
+   ===================================================================== */
+
+.ecran-carte {
+  display: flex;
+  flex-direction: column;
+}
+
+.carrousel {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  margin: 0 -1rem;
+}
+
+.carrousel::-webkit-scrollbar {
+  display: none;
+}
+
+.diapo {
+  flex: 0 0 100%;
+  scroll-snap-align: center;
+  padding: 0.5rem 1rem 1.25rem;
+}
+
+.points-carrousel {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.points-carrousel button {
+  min-height: 34px;
+  padding: 0.25rem 0.85rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 999px;
+  background: none;
+  color: var(--encre-2);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.points-carrousel button.actif {
+  border-color: var(--encre);
+  background: var(--encre);
+  color: var(--papier);
+}
+
+.aide-carte {
+  font-size: 0.85rem;
+}
+
+.lien-bas {
+  align-self: center;
+}
+
+/* =====================================================================
+   Prix : derniers achats et tendances
+   ===================================================================== */
+
+.resume-tendances {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.liste-achats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--rayon);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  overflow: hidden;
+}
+
+.liste-achats li + li {
+  border-top: 1px solid var(--trait);
+}
+
+.ligne-achat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.15rem 0.75rem;
+  align-items: baseline;
+  padding: 0.7rem 0.9rem;
+  color: var(--encre);
+  text-decoration: none;
+}
+
+.achat-nom {
+  font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.achat-prix {
+  font-weight: 700;
+  text-align: right;
+}
+
+.achat-detail {
+  font-size: 0.8rem;
+  color: var(--encre-2);
+}
+
+.tendance {
+  justify-self: end;
+  font-family: var(--chiffres);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tendance-hausse {
+  color: var(--rouge);
+}
+
+.tendance-baisse {
+  color: var(--vert);
+}
+
+.tendance-neutre {
+  font-family: var(--texte);
+  font-weight: 550;
+  color: var(--encre-2);
+}
+
+.puces-favoris {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.puces-favoris a {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-height: 38px;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--encre);
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.puces-favoris .chiffre {
+  font-size: 0.8rem;
+  color: var(--encre-2);
+}
+
+/* =====================================================================
+   Réglages
+   ===================================================================== */
+
+.groupe-reglages {
+  border-radius: var(--rayon);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  overflow: hidden;
+}
+
+.groupe-reglages > * + * {
+  border-top: 1px solid var(--trait);
+}
+
+.reglage-interrupteur {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  cursor: pointer;
+}
+
+.reglage-interrupteur > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.reglage-interrupteur .discret {
+  font-size: 0.82rem;
+}
+
+.reglage-interrupteur input {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  width: 48px;
+  height: 28px;
+  margin: 0;
+  border-radius: 999px;
+  background: var(--trait-fort);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.reglage-interrupteur input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: transform 0.15s;
+}
+
+.reglage-interrupteur input:checked {
+  background: var(--vert);
+}
+
+.reglage-interrupteur input:checked::after {
+  transform: translateX(20px);
+}
+
+.reglage-interrupteur input:focus-visible {
+  outline: 2px solid var(--stylo);
+  outline-offset: 2px;
+}
+
+.repli > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 52px;
+  padding: 0.6rem 1rem;
+  font-weight: 650;
+  cursor: pointer;
+  list-style: none;
+}
+
+.repli > summary::-webkit-details-marker {
+  display: none;
+}
+
+.repli > summary::after {
+  content: '';
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-left: -0.4rem;
+  border-right: 2px solid var(--encre-2);
+  border-bottom: 2px solid var(--encre-2);
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+}
+
+.repli[open] > summary::after {
+  transform: rotate(45deg);
+}
+
+.repli-etat {
+  margin-left: auto;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--encre-2);
+}
+
+.repli-contenu {
+  padding: 0 1rem 1rem;
+}
+
+.compte {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  font-size: 0.9rem;
+}
+
+.bloc-connexion {
+  padding: 1rem;
+  border-radius: var(--rayon);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+}
+
+.bloc-connexion h2 {
+  margin: 0;
+}
+
+.alerte-bloc {
+  border-top: 0;
+  padding: 1rem;
+  border-radius: var(--rayon);
+  background: var(--surligneur);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reglage-interrupteur input,
+  .reglage-interrupteur input::after,
+  .repli > summary::after {
+    transition: none;
+  }
 }

@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { FournisseurSession } from './session.tsx';
 import { accueillirLienImport } from './lecture/claude.ts';
-import { accueillirLienCourses } from './lecture/listeCourses.ts';
+import { accueillirLienCourses } from './lecture/chefFeta.ts';
 import './styles.css';
 
 // Lien « Ouvrir dans Panier Témoin » envoyé par Claude (ticket lu) : à l'ouverture

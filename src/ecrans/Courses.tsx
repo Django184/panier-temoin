@@ -1,136 +1,60 @@
-// Liste de courses : les ingrédients des recettes de Chef Feta, triés
-// selon le parcours du magasin, à cocher pendant les courses. La liste
-// est gardée sur le téléphone et fonctionne sans réseau.
+// Liste de courses : les ingrédients des recettes de Chef Feta, rangés
+// selon le parcours du magasin, à cocher pendant les courses. Gardée sur
+// le téléphone, utilisable sans réseau.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { AJOUT_INSTRUCTIONS_CHEF_FETA, PARCOURS, RAYON_AUTRES, parRayon, type ArticleCourses } from '../lib/courses.ts';
-import { enregistrerListe, importerRecette, lireListe, nouvelId, prendreMessageCourses, type MessageCourses } from '../lecture/listeCourses.ts';
-import { enregistrerProjet, lirePressePapiersSiAutorise, lireProjet, oublierProjet } from '../lecture/claude.ts';
-import { lien } from '../routeur.ts';
-
-const IconeQR = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className="icone-tuile">
-    <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" />
-    <path d="M14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2zM16 16h2v2h-2z" className="plein" />
-  </svg>
-);
-
-const IconeChef = () => (
-  <svg viewBox="0 0 24 24" aria-hidden="true" className="icone-tuile">
-    <path d="M7 14a4 4 0 1 1 1.5-7.7A4 4 0 0 1 16 6a4 4 0 0 1 1 8v5H7z" />
-    <path d="M7 17h10" />
-  </svg>
-);
+import { useEffect, useState } from 'react';
+import { PARCOURS, RAYON_AUTRES, parRayon } from '../lib/courses.ts';
+import { liste, nouvelId, recettes } from '../donnees/local.ts';
+import { chargerRecette, prendreMessageCourses, type MessageCourses } from '../lecture/chefFeta.ts';
+import { lireProjet } from '../lecture/claude.ts';
+import { Aide } from '../composants/Aide.tsx';
+import { ConfigurationChefFeta } from '../composants/ConfigurationChefFeta.tsx';
+import { IconeCrayon, IconeExterne, IconeHorloge, IconeToque } from '../composants/Icones.tsx';
+import { dateSuisse } from '../composants/Champs.tsx';
 
 export function Courses() {
-  const [liste, setListe] = useState<ArticleCourses[]>(lireListe);
+  const articles = liste.utiliser();
+  const historique = recettes.utiliser();
   const [message, setMessage] = useState<MessageCourses | null>(prendreMessageCourses);
-  const [collage, setCollage] = useState<string | null>(null);
-  const [nouvelArticle, setNouvelArticle] = useState('');
-  const [rayonNouveau, setRayonNouveau] = useState(RAYON_AUTRES);
   const [projet, setProjet] = useState<string | null>(() => lireProjet('recettes'));
-  const [chezClaude, setChezClaude] = useState(false);
-  const enCollage = useRef(false);
-  enCollage.current = collage !== null;
-
-  const modifier = (maj: (l: ArticleCourses[]) => ArticleCourses[]) => {
-    setListe((l) => {
-      const suivante = maj(l);
-      enregistrerListe(suivante);
-      return suivante;
-    });
-  };
-
-  const importer = useCallback((texte: string): boolean => {
-    const r = importerRecette(texte);
-    setMessage(r);
-    if (r.ok) {
-      setListe(lireListe());
-      setCollage(null);
-    }
-    return r.ok;
-  }, []);
+  const [edition, setEdition] = useState(false);
+  const [historiqueOuvert, setHistoriqueOuvert] = useState(false);
 
   // Lien de Chef Feta reçu alors que la liste est déjà affichée.
   useEffect(() => {
     const auLien = () => {
       const m = prendreMessageCourses();
-      if (m) {
-        setMessage(m);
-        setListe(lireListe());
-      }
+      if (m) setMessage(m);
     };
     window.addEventListener('hashchange', auLien);
     return () => window.removeEventListener('hashchange', auLien);
   }, []);
 
-  // Retour depuis Claude : recette copiée reprise sans rien toucher, si le
-  // navigateur l'autorise (Chrome sur Android, après un premier « Coller »).
-  useEffect(() => {
-    if (!chezClaude) return;
-    const auRetour = async () => {
-      if (document.visibilityState !== 'visible' || enCollage.current) return;
-      const texte = await lirePressePapiersSiAutorise();
-      if (texte && /ingr[ée]dients|#\/courses\//i.test(texte) && importer(texte)) setChezClaude(false);
-    };
-    document.addEventListener('visibilitychange', auRetour);
-    return () => document.removeEventListener('visibilitychange', auRetour);
-  }, [chezClaude, importer]);
-
-  const coller = async () => {
-    try {
-      const texte = await navigator.clipboard.readText();
-      if (!texte.trim() || !importer(texte)) setCollage(texte);
-    } catch {
-      setCollage('');
-    }
-  };
-
-  const groupes = parRayon(liste);
-  const restants = liste.filter((a) => !a.coche).length;
-  const recettes = [...new Set(liste.map((a) => a.recette))];
-  const plusieursRecettes = recettes.length > 1;
+  const groupes = parRayon(articles);
+  const restants = articles.filter((a) => !a.coche).length;
+  const recettesDansListe = new Set(articles.map((a) => a.recetteId));
+  const plusieursRecettes = new Set(articles.map((a) => a.recette).filter(Boolean)).size > 1;
 
   return (
     <div className="ecran ecran-courses">
-      <header className="entete-ecran">
-        <h1>Liste de courses</h1>
-        <p className="discret">
-          {liste.length === 0
-            ? 'Triée selon le parcours du Migros MM Métropole Renens.'
-            : restants === 0
-              ? 'Tout est dans le panier.'
-              : `${restants} article${restants > 1 ? 's' : ''} à prendre sur ${liste.length}.`}
-        </p>
-      </header>
-
-      <div className="tuiles-acces">
-        <a className="tuile-acces tuile-sombre" href={lien('cumulus')}>
-          <IconeQR />
-          <span>Carte Cumulus</span>
-        </a>
-        {projet ? (
-          <a
-            className="tuile-acces"
-            href={projet}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => setChezClaude(true)}
-          >
-            <IconeChef />
-            <span>Ouvrir Chef Feta</span>
-          </a>
-        ) : (
-          <button
-            type="button"
-            className="tuile-acces"
-            onClick={() => document.getElementById('reglages-chef-feta')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            <IconeChef />
-            <span>Relier Chef Feta</span>
+      <header className="entete-ecran entete-avec-action">
+        <div>
+          <h1>Courses</h1>
+          <p className="discret">
+            {articles.length === 0
+              ? 'Rangées selon le parcours du magasin.'
+              : restants === 0
+                ? 'Tout est dans le panier.'
+                : `${restants} article${restants > 1 ? 's' : ''} à prendre sur ${articles.length}`}
+          </p>
+        </div>
+        {articles.length > 0 ? (
+          <button type="button" className={`bouton-discret ${edition ? 'actif' : ''}`} aria-pressed={edition} onClick={() => setEdition(!edition)}>
+            <IconeCrayon className="icone-petite" />
+            {edition ? 'Terminé' : 'Modifier'}
           </button>
-        )}
-      </div>
+        ) : null}
+      </header>
 
       {message ? (
         <p className={message.ok ? 'message-ok' : 'erreur'} role="status">
@@ -139,31 +63,77 @@ export function Courses() {
         </p>
       ) : null}
 
-      {collage !== null ? (
-        <section className="bloc-collage">
-          <label className="champ champ-large">
-            <span className="champ-etiquette">Recette copiée depuis Claude</span>
-            <textarea rows={6} value={collage} onChange={(e) => setCollage(e.target.value)} />
-          </label>
-          <div className="actions">
-            <button type="button" className="bouton-secondaire" onClick={() => setCollage(null)}>
-              Annuler
-            </button>
-            <button type="button" className="bouton-principal" disabled={!collage.trim()} onClick={() => importer(collage)}>
-              Ajouter à la liste
-            </button>
-          </div>
+      {projet ? null : (
+        <section className="carte-config">
+          <h2>Relier Chef Feta</h2>
+          <ConfigurationChefFeta onChange={setProjet} />
         </section>
-      ) : (
-        <button type="button" className={chezClaude ? 'bouton-principal bouton-large' : 'bouton-secondaire bouton-large'} onClick={() => void coller()}>
-          Coller une recette copiée depuis Claude
-        </button>
       )}
 
-      {liste.length === 0 ? (
+      <Aide cle="courses" titre="Comment ça marche">
+        <ol className="etapes etapes-numerotees">
+          <li>Dans Chef Feta, demandez une recette complète.</li>
+          <li>
+            Touchez <strong>🛒 Ajouter à ma liste de courses</strong> : la liste arrive ici, et la recette dans l’onglet Recette.
+          </li>
+          <li>En magasin, cochez les articles. « Recettes » reprend une recette déjà reçue.</li>
+        </ol>
+      </Aide>
+
+      {projet || historique.length > 0 ? (
+        <div className="actions-courses">
+          {projet ? (
+            <a className="bouton-principal" href={projet} target="_blank" rel="noopener noreferrer">
+              <IconeToque className="icone-petite" />
+              Chef Feta
+              <IconeExterne className="icone-petite icone-discrete" />
+            </a>
+          ) : null}
+          {historique.length > 0 ? (
+            <button
+              type="button"
+              className="bouton-secondaire"
+              aria-expanded={historiqueOuvert}
+              onClick={() => setHistoriqueOuvert(!historiqueOuvert)}
+            >
+              <IconeHorloge className="icone-petite" />
+              Recettes
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {historiqueOuvert ? (
+        <ul className="historique" aria-label="Recettes déjà reçues">
+          {historique.map((r) => {
+            const presente = recettesDansListe.has(r.id);
+            return (
+              <li key={r.id}>
+                <button
+                  type="button"
+                  className="historique-recette"
+                  onClick={() => {
+                    chargerRecette(r);
+                    setHistoriqueOuvert(false);
+                    setMessage({ ok: true, message: `${r.titre} : ${r.ingredients.length} articles dans la liste.` });
+                  }}
+                >
+                  <span className="historique-titre">{r.titre}</span>
+                  <span className="historique-detail">
+                    {r.portions ? `${r.portions} pers. · ` : ''}
+                    {r.ingredients.length} ingrédients · {dateSuisse(r.importeLe.slice(0, 10))}
+                  </span>
+                  <span className={`historique-etat ${presente ? 'present' : ''}`}>{presente ? 'Dans la liste' : 'Ajouter'}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+
+      {articles.length === 0 ? (
         <p className="vide">
-          Liste vide. Dans une recette de Chef Feta, touchez « 🛒 Ajouter à ma liste de courses », ou copiez la recette puis
-          touchez « Coller une recette ».
+          Liste vide. {projet ? 'Ouvrez Chef Feta et touchez « 🛒 Ajouter à ma liste de courses » dans une recette.' : ''}
         </p>
       ) : (
         <div className="liste-courses">
@@ -176,17 +146,37 @@ export function Courses() {
               <ul>
                 {g.articles.map((a) => (
                   <li key={a.id}>
-                    <label className={`article-courses ${a.coche ? 'article-pris' : ''}`}>
-                      <input
-                        type="checkbox"
-                        checked={a.coche}
-                        onChange={() => modifier((l) => l.map((x) => (x.id === a.id ? { ...x, coche: !x.coche } : x)))}
-                      />
-                      <span className="article-texte">
-                        {a.texte}
-                        {plusieursRecettes && a.recette ? <span className="article-recette">{a.recette}</span> : null}
-                      </span>
-                    </label>
+                    {edition ? (
+                      <div className="article-edition">
+                        <input
+                          value={a.texte}
+                          aria-label={`Article : ${a.texte}`}
+                          onChange={(e) =>
+                            liste.modifier((l) => l.map((x) => (x.id === a.id ? { ...x, texte: e.target.value, manuel: x.recetteId !== null } : x)))
+                          }
+                        />
+                        <button
+                          type="button"
+                          className="bouton-icone"
+                          aria-label={`Retirer ${a.texte}`}
+                          onClick={() => liste.modifier((l) => l.filter((x) => x.id !== a.id))}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ) : (
+                      <label className={`article-courses ${a.coche ? 'article-pris' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={a.coche}
+                          onChange={() => liste.modifier((l) => l.map((x) => (x.id === a.id ? { ...x, coche: !x.coche } : x)))}
+                        />
+                        <span className="article-texte">
+                          {a.texte}
+                          {plusieursRecettes && a.recette ? <span className="article-recette">{a.recette}</span> : null}
+                        </span>
+                      </label>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -195,166 +185,61 @@ export function Courses() {
         </div>
       )}
 
-      <form
-        className="ajout-article"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const texte = nouvelArticle.trim();
-          if (!texte) return;
-          modifier((l) => [...l, { id: nouvelId(), texte, rayon: rayonNouveau, recette: '', coche: false }]);
-          setNouvelArticle('');
-        }}
-      >
-        <input
-          value={nouvelArticle}
-          onChange={(e) => setNouvelArticle(e.target.value)}
-          placeholder="Ajouter un article"
-          aria-label="Article à ajouter"
-        />
-        <select value={rayonNouveau} onChange={(e) => setRayonNouveau(e.target.value)} aria-label="Rayon">
-          {PARCOURS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-        <button type="submit" className="bouton-principal" disabled={!nouvelArticle.trim()}>
-          Ajouter
-        </button>
-      </form>
+      {edition || articles.length === 0 ? <AjoutArticle /> : null}
 
-      {liste.length > 0 ? (
-        <section className="bloc">
-          {recettes.filter(Boolean).length > 0 ? (
-            <>
-              <h2>Recettes dans la liste</h2>
-              <ul className="puces-recettes">
-                {recettes.filter(Boolean).map((r) => (
-                  <li key={r}>
-                    <span>{r}</span>
-                    <button
-                      type="button"
-                      className="bouton-icone"
-                      aria-label={`Retirer ${r}`}
-                      onClick={() => modifier((l) => l.filter((a) => a.recette !== r))}
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-          <div className="actions">
-            <button
-              type="button"
-              className="bouton-secondaire"
-              disabled={restants === liste.length}
-              onClick={() => modifier((l) => l.filter((a) => !a.coche))}
-            >
-              Retirer les articles pris
-            </button>
-            <button
-              type="button"
-              className="bouton-lien bouton-danger"
-              onClick={() => {
-                if (window.confirm('Vider toute la liste de courses ?')) modifier(() => []);
-              }}
-            >
-              Vider la liste
-            </button>
-          </div>
-        </section>
+      {edition ? (
+        <div className="actions">
+          <button
+            type="button"
+            className="bouton-secondaire"
+            disabled={restants === articles.length}
+            onClick={() => liste.modifier((l) => l.filter((a) => !a.coche))}
+          >
+            Retirer les articles pris
+          </button>
+          <button
+            type="button"
+            className="bouton-lien bouton-danger"
+            onClick={() => {
+              if (window.confirm('Vider toute la liste de courses ?')) {
+                liste.modifier(() => []);
+                setEdition(false);
+              }
+            }}
+          >
+            Vider la liste
+          </button>
+        </div>
       ) : null}
-
-      <ReglagesChefFeta projet={projet} onChange={setProjet} />
     </div>
   );
 }
 
-function ReglagesChefFeta({ projet, onChange }: { projet: string | null; onChange: (p: string | null) => void }) {
-  const [saisie, setSaisie] = useState('');
-  const [copie, setCopie] = useState(false);
-  const [erreur, setErreur] = useState<string | null>(null);
-
+function AjoutArticle() {
+  const [texte, setTexte] = useState('');
+  const [rayon, setRayon] = useState(RAYON_AUTRES);
   return (
-    <details className="bloc reglages" id="reglages-chef-feta" open={projet === null}>
-      <summary>Relier le projet Chef Feta</summary>
-      <ol className="etapes etapes-numerotees">
-        <li>
-          <p>
-            Copiez ce complément et collez-le à la fin des instructions du projet Chef Feta : chaque recette complète finira par
-            un lien « 🛒 Ajouter à ma liste de courses ».
-          </p>
-          <button
-            type="button"
-            className="bouton-secondaire"
-            onClick={() =>
-              navigator.clipboard
-                .writeText(AJOUT_INSTRUCTIONS_CHEF_FETA)
-                .then(() => setCopie(true))
-                .catch(() => setErreur('Copie impossible : ouvrez « Voir le complément » et copiez-le à la main.'))
-            }
-          >
-            {copie ? 'Complément copié ✓' : 'Copier le complément'}
-          </button>
-          <details>
-            <summary>Voir le complément</summary>
-            <pre className="consigne">{AJOUT_INSTRUCTIONS_CHEF_FETA}</pre>
-          </details>
-        </li>
-        <li>
-          <p>Collez l’adresse du projet Chef Feta (https://claude.ai/project/…) pour l’ouvrir d’ici en un geste.</p>
-          {projet ? (
-            <p className="projet-enregistre">
-              <span>Projet enregistré ✓</span>
-              <button
-                type="button"
-                className="bouton-lien"
-                onClick={() => {
-                  oublierProjet('recettes');
-                  onChange(null);
-                }}
-              >
-                Changer
-              </button>
-            </p>
-          ) : (
-            <div className="saisie-projet">
-              <input
-                type="url"
-                inputMode="url"
-                placeholder="https://claude.ai/project/…"
-                value={saisie}
-                onChange={(e) => setSaisie(e.target.value)}
-                aria-label="Adresse du projet Chef Feta"
-              />
-              <button
-                type="button"
-                className="bouton-principal"
-                disabled={!saisie.trim()}
-                onClick={() => {
-                  const adresse = enregistrerProjet(saisie, 'recettes');
-                  if (adresse) {
-                    onChange(adresse);
-                    setSaisie('');
-                    setErreur(null);
-                  } else {
-                    setErreur('Adresse non reconnue. Elle commence par https://claude.ai/project/');
-                  }
-                }}
-              >
-                Enregistrer
-              </button>
-            </div>
-          )}
-        </li>
-      </ol>
-      {erreur ? (
-        <p className="erreur" role="alert">
-          {erreur}
-        </p>
-      ) : null}
-    </details>
+    <form
+      className="ajout-article"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const t = texte.trim();
+        if (!t) return;
+        liste.modifier((l) => [...l, { id: nouvelId(), texte: t, rayon, recetteId: null, recette: '', ingredient: null, coche: false }]);
+        setTexte('');
+      }}
+    >
+      <input value={texte} onChange={(e) => setTexte(e.target.value)} placeholder="Ajouter un article" aria-label="Article à ajouter" />
+      <select value={rayon} onChange={(e) => setRayon(e.target.value)} aria-label="Rayon">
+        {PARCOURS.map((r) => (
+          <option key={r} value={r}>
+            {r}
+          </option>
+        ))}
+      </select>
+      <button type="submit" className="bouton-principal" disabled={!texte.trim()}>
+        Ajouter
+      </button>
+    </form>
   );
 }

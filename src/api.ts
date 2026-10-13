@@ -313,6 +313,34 @@ export async function controlerPrix(
 // Statistiques
 // ---------------------------------------------------------------------
 
+export interface DernierAchat {
+  produit_id: string;
+  nom: string;
+  vendu_au_poids: boolean;
+  unite: Unite;
+  date_achat: string;
+  prix_normal_centimes: number;
+  prix_paye_centimes: number;
+  est_promo: boolean;
+  precedent_prix_centimes: number | null;
+  precedent_date: string | null;
+  variation_pct: number | null;
+}
+
+/** Derniers produits achetés, avec l'écart de prix par rapport à l'achat précédent. */
+export async function derniersAchats(limite = 40): Promise<DernierAchat[]> {
+  const { data, error } = await supabase.rpc('derniers_achats', { p_limite: limite });
+  if (error) {
+    // Fonction pas encore créée dans la base (migration 7 non exécutée).
+    if (/derniers_achats|function|PGRST202/i.test(`${error.code} ${error.message}`)) return [];
+    throw erreur(error);
+  }
+  return ((data ?? []) as DernierAchat[]).map((d) => ({
+    ...d,
+    variation_pct: d.variation_pct === null ? null : Number(d.variation_pct),
+  }));
+}
+
 export interface PointSerie {
   semaine: string;
   unite: Unite;
