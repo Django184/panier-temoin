@@ -19,14 +19,15 @@ Appareil : ____________________  Système : ____________________  Date : _______
 - [ ] Bon mot de passe : l’écran « Ajouter un ticket » s’affiche.
 - [ ] Fermer complètement l’app puis la rouvrir : la session est conservée.
 
-## 3. Capture et lecture
+## 3. Projet Claude et lecture
 
-- [ ] « Photographier le ticket » ouvre directement l’appareil photo arrière.
-- [ ] « Choisir une photo ou une capture » ouvre la photothèque.
-- [ ] **iPhone** : une photo au format HEIC est acceptée.
-- [ ] Après la photo, « Lecture du ticket… » s’affiche avec l’aperçu, puis l’écran de vérification en quelques secondes.
-- [ ] Le magasin, la date, l’heure et le total sont remplis ; le numéro Cumulus n’apparaît nulle part.
-- [ ] Mode avion : un message clair propose de réessayer, de saisir à la main ou de passer par l’app Claude.
+- [ ] Ajouter → « Configurer le projet Claude » : « Copier les instructions » affiche « Instructions copiées ».
+- [ ] Les instructions collées dans un projet Claude « Panier Témoin », l’adresse du projet collée dans l’app : « Projet enregistré ».
+- [ ] « Photographier le ticket » ouvre le projet Claude (dans l’app Claude ou le navigateur).
+- [ ] Dans le projet, une photo de ticket envoyée sans texte donne une phrase de résumé, le lien « Ouvrir dans Panier Témoin » et un bloc de code.
+- [ ] Toucher le lien rouvre Panier Témoin sur l’écran de vérification, lignes remplies, sans demander de reconnexion.
+- [ ] Copier le bloc de code puis « Coller la réponse de Claude » ouvre le même ticket.
+- [ ] Le numéro Cumulus n’apparaît ni dans la réponse de Claude ni dans l’app.
 
 ## 4. Validation et envoi
 
@@ -40,13 +41,7 @@ Appareil : ____________________  Système : ____________________  Date : _______
 - [ ] Envoi : « Ticket enregistré », avec le nombre de lignes.
 - [ ] Renvoyer le même ticket : « Ticket déjà enregistré ».
 
-## 5. Import par l’app Claude (secours)
-
-- [ ] « Copier la consigne » affiche « Consigne copiée ».
-- [ ] La consigne collée dans l’app Claude avec la photo produit un JSON.
-- [ ] La réponse collée ouvre l’écran de vérification, lignes remplies.
-
-## 6. Consultation
+## 5. Consultation
 
 - [ ] Explorer : la recherche « linguine » trouve le produit, avec son dernier prix.
 - [ ] Fiche produit : la courbe s’affiche ; le toucher montre la date et le prix ; « Voir les valeurs » ouvre le tableau.
@@ -56,7 +51,7 @@ Appareil : ____________________  Système : ____________________  Date : _______
 - [ ] Paniers : créer un panier, ajouter deux produits, voir l’indice.
 - [ ] Déconnecté, l’Explorer et les fiches restent lisibles.
 
-## 7. Profil, thème et mises à jour
+## 6. Profil, thème et mises à jour
 
 - [ ] Profil liste les tickets envoyés ; la suppression demande confirmation.
 - [ ] Un prix mis de côté apparaît dans « Prix à confirmer » et disparaît après « Confirmer ».

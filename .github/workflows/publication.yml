@@ -81,47 +81,6 @@ jobs:
         with:
           path: dist
 
-  fonction:
-    name: Fonction de lecture (Supabase)
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    env:
-      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
-      PROJET: tpovnthrvlajmyjrfltn
-    steps:
-      - uses: actions/checkout@v7
-      - name: Vérification des secrets
-        id: secrets
-        run: |
-          if [ -n "$SUPABASE_ACCESS_TOKEN" ] && [ -n "$MISTRAL_API_KEY" ]; then
-            echo "presents=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "::warning::Secrets SUPABASE_ACCESS_TOKEN ou MISTRAL_API_KEY absents : la fonction de lecture n'est pas déployée."
-            echo "presents=false" >> "$GITHUB_OUTPUT"
-          fi
-      - uses: supabase/setup-cli@v3
-        if: steps.secrets.outputs.presents == 'true'
-      - name: Clé Mistral dans les secrets de la fonction
-        if: steps.secrets.outputs.presents == 'true'
-        run: supabase secrets set --project-ref "$PROJET" MISTRAL_API_KEY="$MISTRAL_API_KEY"
-      - name: Déploiement de lire-ticket
-        if: steps.secrets.outputs.presents == 'true'
-        run: supabase functions deploy lire-ticket --project-ref "$PROJET" --no-verify-jwt
-      - name: Contrôle de la fonction et de la clé Mistral
-        if: steps.secrets.outputs.presents == 'true'
-        run: |
-          # La clé Mistral est acceptée par Mistral.
-          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $MISTRAL_API_KEY" https://api.mistral.ai/v1/models)
-          echo "Mistral : HTTP $code"
-          [ "$code" = "200" ] || { echo "::error::Clé Mistral refusée (HTTP $code)."; exit 1; }
-          # La fonction répond et refuse un appel sans session.
-          sleep 10
-          reponse=$(curl -s -w '\n%{http_code}' -X POST "https://$PROJET.supabase.co/functions/v1/lire-ticket" \
-            -H 'Content-Type: application/json' -H 'Origin: https://django184.github.io' -d '{}')
-          echo "$reponse"
-          echo "$reponse" | tail -1 | grep -q '^401$' || { echo "::error::La fonction lire-ticket ne répond pas comme prévu."; exit 1; }
-
   publication:
     name: Publication GitHub Pages
     if: github.ref == 'refs/heads/main'

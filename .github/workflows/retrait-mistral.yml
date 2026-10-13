@@ -1,0 +1,26 @@
+# Retrait de l'ancienne lecture par Mistral : supprime la fonction
+# « lire-ticket » et la clé Mistral des secrets Supabase. Lancement
+# manuel, une seule fois ; ce fichier peut ensuite être supprimé.
+
+name: Retrait de la lecture Mistral
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  retrait:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJET: tpovnthrvlajmyjrfltn
+    steps:
+      - uses: supabase/setup-cli@v3
+      - name: Suppression de la fonction et de la clé
+        run: |
+          supabase functions delete lire-ticket --project-ref "$PROJET" --yes || echo "::notice::Fonction déjà absente."
+          supabase secrets unset MISTRAL_API_KEY --project-ref "$PROJET" --yes || echo "::notice::Clé déjà absente."
+          supabase functions list --project-ref "$PROJET"
+          echo "::notice::Fonctions restantes : $(supabase functions list --project-ref "$PROJET" | grep -c lire-ticket || true) lire-ticket"

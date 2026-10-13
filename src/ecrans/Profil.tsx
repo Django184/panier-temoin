@@ -15,6 +15,7 @@ import { useSession } from '../session.tsx';
 import { enFrancs } from '../lib/montants.ts';
 import { dateSuisse } from '../composants/Champs.tsx';
 import { MENTION_NON_AFFILIATION } from '../config.ts';
+import { ConfigurationClaude } from '../composants/ConfigurationClaude.tsx';
 
 export function Profil() {
   const { session } = useSession();
@@ -101,16 +102,22 @@ export function Profil() {
         )}
       </section>
 
+      <section className="bloc">
+        <h2>Projet Claude</h2>
+        <p className="discret">Le projet de votre compte Claude qui lit les photos de tickets.</p>
+        <ConfigurationClaude />
+      </section>
+
       <Installer />
 
       <section className="bloc">
         <h2>Confidentialité</h2>
         <ul className="conseils">
           <li>
-            La photo du ticket est envoyée au service de lecture Mistral (hébergé en Europe) le temps de la lecture ; l’app ne
-            la conserve pas. Repliez le bas du ticket pour ne pas y montrer votre numéro Cumulus.
+            La photo du ticket est lue par Claude, dans votre propre compte Claude ; elle n’est jamais envoyée à Panier Témoin.
+            Repliez le bas du ticket pour ne pas y montrer votre numéro Cumulus.
           </li>
-          <li>Seuls le magasin, la date, l’heure, les totaux et les lignes d’articles sont enregistrés. Le numéro Cumulus et les données de paiement ne sont jamais demandés au service de lecture.</li>
+          <li>Seuls le magasin, la date, l’heure, les totaux et les lignes d’articles sont enregistrés. Les instructions du projet interdisent à Claude de recopier le numéro Cumulus et les données de paiement.</li>
           <li>Les données sont hébergées en Suisse (Supabase, région Zurich). Les statistiques publiques ne montrent aucun contributeur.</li>
         </ul>
         <p className="discret">{MENTION_NON_AFFILIATION}</p>

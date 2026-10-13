@@ -481,7 +481,19 @@ mark.exemple-douteux {
   color: var(--papier);
   font-size: 1.15rem;
   font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
+}
+
+.bouton-photo:active {
+  transform: translateY(1px);
+}
+
+.bouton-photo-detail {
+  margin-top: -0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.75;
 }
 
 .icone-photo {
@@ -517,49 +529,82 @@ mark.exemple-douteux {
   padding: 1rem;
 }
 
-.ecran-lecture {
-  text-align: center;
-  padding-top: 1rem;
+.carte-reprise > * + * {
+  margin-top: 0.75rem;
 }
 
-.ecran-lecture h1 {
-  font-size: 1.4rem;
+/* Étapes numérotées dans une pastille */
+.etapes-numerotees {
+  list-style: none;
+  padding-left: 0;
+  counter-reset: etape;
 }
 
-.apercu-lecture {
-  display: block;
-  max-width: 100%;
-  max-height: 42vh;
-  margin: 0 auto;
-  border-radius: var(--rayon);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 8px 24px rgb(0 0 0 / 0.08);
-}
-
-.barre-attente {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--trait);
-  overflow: hidden;
+.etapes-numerotees > li {
   position: relative;
+  padding-left: 2.25rem;
+  counter-increment: etape;
 }
 
-.barre-attente::after {
-  content: '';
+.etapes-numerotees > li + li {
+  margin-top: 1rem;
+}
+
+.etapes-numerotees > li::before {
+  content: counter(etape);
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 35%;
-  border-radius: 3px;
-  background: var(--stylo);
-  animation: attente 1.4s ease-in-out infinite;
+  left: 0;
+  top: 0;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--stylo-fond);
+  color: var(--stylo);
+  font-size: 0.85rem;
+  font-weight: 700;
 }
 
-@keyframes attente {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(290%);
-  }
+.etapes-numerotees p {
+  margin: 0 0 0.5rem;
+}
+
+.configuration-claude details {
+  margin-top: 0.5rem;
+}
+
+.configuration-claude summary {
+  color: var(--encre-2);
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.saisie-projet {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.saisie-projet input {
+  flex: 1;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--encre);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.projet-enregistre {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  color: var(--vert);
+  font-weight: 650;
 }
 
 .ecran-fin {
@@ -1172,13 +1217,9 @@ mark.exemple-douteux {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .barre-attente::after {
-    animation: none;
-    width: 100%;
-    opacity: 0.5;
-  }
   .bouton-principal:active:not(:disabled),
-  .bouton-secondaire:active {
+  .bouton-secondaire:active,
+  .bouton-photo:active {
     transform: none;
   }
 }

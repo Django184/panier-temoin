@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { lireTicket, lireLigneArticle } from './lecteurTicket.ts';
-import { lireReponseClaude, ErreurImport } from './importClaude.ts';
+import { lireReponseClaude, ErreurImport, ADRESSE_IMPORT, INSTRUCTIONS_PROJET } from './importClaude.ts';
 import { etatTicket } from './coherence.ts';
 import { versCentimes, enFrancs, enCHF } from './montants.ts';
 import {
@@ -166,4 +166,85 @@ test('import depuis Claude : réponses invalides', () => {
   assert.throws(() => lireReponseClaude('Je ne peux pas lire ce ticket.'), ErreurImport);
   assert.throws(() => lireReponseClaude('{ "lignes": [] }'), ErreurImport);
   assert.throws(() => lireReponseClaude('{ pas du json }'), ErreurImport);
+});
+
+// Ticket 2 au format compact des instructions du projet Claude.
+const COMPACT = {
+  f: '064590',
+  m: 'MM Métropole Renens',
+  l: 'Renens',
+  c: 'Vaud',
+  d: '2026-10-12',
+  h: '19:00:05',
+  t: '24.60',
+  e: '4.00',
+  a: [
+    ['Agnesi Linguine N.10', '3', '2.40', '2.88', '4.32'],
+    ['Bio lentilles rouges', '2', '2.80', '1.12', '4.48'],
+    ['MBud gnocchi', '1', '1.95', '', '1.95'],
+    ['Bio Feta (200g)', '1', '3.20', '', '3.20'],
+    ['Aubergines', '1', '4.00', '', '2.00'],
+    ['Bio yogourt nature', '1', '1.40', '', '1.40'],
+    ['Bio courgettes', '1', '3.30', '', '3.30'],
+    ['Bio Fairtrade bananes', '1', '2.95', '', '2.60'],
+    ['Pommes rou. douce Gala', '1', '2.80', '', '1.35'],
+  ],
+};
+
+/** Lien tel que les instructions demandent à Claude de l'écrire. */
+function lienCommeClaude(objet: unknown): string {
+  const json = JSON.stringify(objet)
+    .replaceAll('%', '%25')
+    .replaceAll(' ', '%20')
+    .replaceAll('(', '%28')
+    .replaceAll(')', '%29');
+  return `${ADRESSE_IMPORT}${json}`;
+}
+
+function verifierTicket2(t: ReturnType<typeof lireReponseClaude>) {
+  assert.equal(t.magasin.numeroFiliale, '064590');
+  assert.equal(t.magasin.canton, 'VD');
+  assert.equal(t.date, '2026-10-12');
+  assert.equal(t.heure, '19:00:05');
+  assert.equal(t.totalCentimes, 2460);
+  assert.equal(t.lignes.length, 9);
+  assert.equal(ligne(t, 'Bio Feta').libelle, 'Bio Feta (200g)');
+  assert.equal(ligne(t, 'Aubergines').unite, 'kg');
+  assert.equal(etatTicket(t).pret, true);
+}
+
+test('instructions du projet : lien d’import et format compact', () => {
+  assert.ok(INSTRUCTIONS_PROJET.includes(ADRESSE_IMPORT));
+  assert.ok(INSTRUCTIONS_PROJET.includes('Cumulus'));
+});
+
+test('lien de Claude : fragment reçu par l’app, encodé par le navigateur', () => {
+  // Le navigateur encode en plus les guillemets et les accents.
+  const lien = lienCommeClaude(COMPACT);
+  const fragment = '#' + new URL(lien).hash.slice(1);
+  verifierTicket2(lireReponseClaude(fragment));
+});
+
+test('lien de Claude : « % » laissé tel quel et parenthèses non encodées', () => {
+  const objet = { ...COMPACT, a: [...COMPACT.a, ['Lait 3.5% (UHT)', '1', '1.00', '', '1.00']], t: '25.60' };
+  const lien = `${ADRESSE_IMPORT}${JSON.stringify(objet).replaceAll(' ', '%20')}`;
+  const t = lireReponseClaude(`[Ouvrir dans Panier Témoin](${lien})`);
+  assert.equal(t.lignes.length, 10);
+  assert.equal(t.lignes[9].libelle, 'Lait 3.5% (UHT)');
+});
+
+test('réponse complète de Claude collée : lien coupé, bloc de code intact', () => {
+  const lienCoupe = lienCommeClaude(COMPACT).slice(0, 200);
+  const reponse = `9 articles, total 24.60 CHF, le 12.10.2026.
+
+[Ouvrir dans Panier Témoin](${lienCoupe})
+
+\`\`\`json
+${JSON.stringify(COMPACT)}
+\`\`\``;
+  verifierTicket2(lireReponseClaude(reponse));
+});
+
+test('bloc de code seul, copié avec le bouton de copie', () => {
+  verifierTicket2(lireReponseClaude(JSON.stringify(COMPACT)));
 });

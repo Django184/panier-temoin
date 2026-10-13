@@ -59,8 +59,8 @@ function serie() {
 
 function brouillonDemo() {
   const b = lireTicket(TICKET_2_IDEAL);
-  b.methode = 'lecture_ia';
-  // Comme pour la lecture par l'IA, l'unité n'est pas devinée.
+  b.methode = 'import_claude';
+  // Comme pour un ticket lu par Claude, l'unité n'est pas devinée.
   b.lignes = b.lignes.map((l) => ({ ...l, douteux: l.douteux.filter((d) => d !== 'unite') }));
   // Une ligne mal lue, pour voir l'état « À vérifier ».
   b.lignes[3] = { ...b.lignes[3], totalCentimes: 920, douteux: ['total'] };
@@ -110,7 +110,7 @@ function reponseSimulee(url, entetes) {
 
 const navigateur = await chromium.launch();
 
-async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null } = {}) {
+async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true } = {}) {
   const contexte = await navigateur.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -119,11 +119,12 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
     serviceWorkers: 'block',
   });
   await contexte.addInitScript(
-    ([cle, valeurSession, valeurBrouillon]) => {
+    ([cle, valeurSession, valeurBrouillon, avecProjet]) => {
       if (valeurSession) window.localStorage.setItem(cle, valeurSession);
       if (valeurBrouillon) window.localStorage.setItem('panier-temoin:brouillon', valeurBrouillon);
+      if (avecProjet) window.localStorage.setItem('panier-temoin:projet-claude', 'https://claude.ai/project/00000000-0000-4000-8000-000000000000');
     },
-    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null],
+    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet],
   );
   await contexte.route(`https://${REF}.supabase.co/**`, async (route) => {
     const requete = route.request();
@@ -154,6 +155,19 @@ const reprendre = async (page) => {
 await capturer('01-accueil');
 await capturer('02-connexion', { connecte: false, chemin: 'connexion' });
 await capturer('03-nouveau-ticket', { chemin: 'ajouter' });
+await capturer('03b-projet-claude', {
+  chemin: 'ajouter',
+  projet: false,
+  action: async (page) => {
+    await page.getByRole('button', { name: 'Configurer le projet Claude' }).click();
+  },
+});
+// Lien « Ouvrir dans Panier Témoin » tel que Claude l'écrit.
+const LIEN_IMPORT = '#/import/' + JSON.stringify({
+  f: '064590', m: 'MM Métropole Renens', l: 'Renens', c: 'Vaud', d: '2026-10-12', h: '19:00:05', t: '12.75', e: '4.00',
+  a: [['Agnesi Linguine N.10', '3', '2.40', '2.88', '4.32'], ['Bio lentilles rouges', '2', '2.80', '1.12', '4.48'], ['MBud gnocchi', '1', '1.95', '', '1.95'], ['Aubergines', '1', '4.00', '', '2.00']],
+}).replaceAll(' ', '%20');
+await capturer('03c-retour-de-claude', { chemin: LIEN_IMPORT.slice(2) });
 await capturer('04-verification', { chemin: 'ajouter', brouillon: brouillonDemo(), action: reprendre });
 await capturer('05-verification-ligne-ouverte', {
   chemin: 'ajouter',

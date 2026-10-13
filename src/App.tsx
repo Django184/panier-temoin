@@ -47,6 +47,9 @@ function Ecran({ chemin }: { chemin: string[] }) {
           <Profil />
         </Reserve>
       );
+    case 'import':
+      // Lien envoyé par Claude : l'app passe aussitôt à « Ajouter ».
+      return <div className="ecran"><p className="discret">Ouverture du ticket…</p></div>;
     case 'connexion':
       return session ? <Accueil /> : <Connexion />;
     default:
