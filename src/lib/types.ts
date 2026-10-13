@@ -41,7 +41,7 @@ export interface MagasinBrouillon {
 
 export type ChampEntete = 'filiale' | 'magasin' | 'date' | 'heure' | 'total' | 'rabaisTotal';
 
-export type MethodeExtraction = 'ocr_local' | 'import_claude' | 'saisie_manuelle';
+export type MethodeExtraction = 'lecture_ia' | 'ocr_local' | 'import_claude' | 'saisie_manuelle';
 
 export interface TicketBrouillon {
   magasin: MagasinBrouillon;

@@ -3,7 +3,7 @@
 // l'utilisateur l'envoie avec la photo du ticket, puis colle la réponse.
 // La réponse est vérifiée ici, puis ouvre le même écran de validation.
 
-import type { FormatMagasin, TicketBrouillon } from './types.ts';
+import type { FormatMagasin, MethodeExtraction, TicketBrouillon } from './types.ts';
 import { versCentimes } from './montants.ts';
 import { construireLigne } from './lecteurTicket.ts';
 
@@ -73,8 +73,16 @@ function heureComplete(valeur: string): string {
   return '';
 }
 
-/** Transforme la réponse collée en brouillon de ticket. */
+/** Réponse collée depuis l'app Claude → brouillon de ticket. */
 export function lireReponseClaude(reponse: string): TicketBrouillon {
+  return lireReponseJSON(reponse, 'import_claude');
+}
+
+/**
+ * Transforme une réponse JSON au format de la consigne (lecture
+ * automatique ou import depuis Claude) en brouillon de ticket.
+ */
+export function lireReponseJSON(reponse: string, methode: MethodeExtraction): TicketBrouillon {
   const debut = reponse.indexOf('{');
   const fin = reponse.lastIndexOf('}');
   if (debut === -1 || fin <= debut) {
@@ -116,7 +124,10 @@ export function lireReponseClaude(reponse: string): TicketBrouillon {
         totalSur: total !== null,
       });
     })
-    .filter((l) => l.libelle.length > 0);
+    .filter((l) => l.libelle.length > 0)
+    // Valeurs recopiées du ticket : un article pesé (quantité 1, total
+    // différent du prix, sans rabais) est reconnu de façon fiable.
+    .map((l) => ({ ...l, douteux: l.douteux.filter((d) => d !== 'unite') }));
 
   const brouillon: TicketBrouillon = {
     magasin: {
@@ -132,7 +143,7 @@ export function lireReponseClaude(reponse: string): TicketBrouillon {
     rabaisTotalCentimes: montant(d.vous_economisez) ?? 0,
     lignes,
     douteux: [],
-    methode: 'import_claude',
+    methode,
   };
 
   if (brouillon.magasin.numeroFiliale === '') brouillon.douteux.push('filiale');

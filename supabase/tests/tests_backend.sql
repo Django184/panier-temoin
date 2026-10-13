@@ -45,7 +45,7 @@ select set_config('test.ticket1', $json$
   "magasin": {"numero_filiale": "064590", "nom": "MM Métropole Renens", "format": "MM",
               "localite": "Renens", "canton": "VD"},
   "date": "2026-10-12", "heure": "12:43:59", "total_centimes": 640, "rabais_total_centimes": 0,
-  "methode": "ocr_local",
+  "methode": "lecture_ia",
   "lignes": [
     {"libelle_brut": "Poivrons rouges", "produit_nom": "Poivrons rouges", "unite": "kg",
      "quantite": 0.303, "prix_normal_centimes": 380, "total_centimes": 115},

@@ -32,24 +32,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
-        // Le moteur OCR (plusieurs Mo) n'est pas pré-chargé : il est mis en
-        // cache au premier ticket lu, puis disponible hors connexion.
-        globIgnores: ['ocr/**'],
         navigateFallback: `${BASE}index.html`,
-        runtimeCaching: [
-          {
-            // Une expression régulière, pas une fonction : Workbox recopie
-            // ce motif tel quel dans le service worker, où les variables
-            // de ce fichier n'existent pas.
-            urlPattern: /\/panier-temoin\/ocr\//,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'moteur-ocr',
-              expiration: { maxEntries: 20 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       },
     }),
   ],

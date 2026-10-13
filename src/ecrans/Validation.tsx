@@ -1,41 +1,49 @@
-// Écran de validation : l'utilisateur confirme ou corrige chaque ligne,
-// le magasin, la date, l'heure et les totaux avant l'envoi. C'est la
-// principale garantie de qualité des données.
+// Écran de vérification : le ticket lu est présenté comme un ticket de
+// caisse. Chaque ligne tient sur une rangée ; on la touche pour la
+// corriger. L'envoi n'est possible que lorsque tout tombe juste.
 //
 // Convention visuelle : valeur lue sans certitude = surlignée en ambre ;
 // valeur corrigée à la main = écrite au stylo bleu.
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ChampEntete, ChampLigne, LigneBrouillon, TicketBrouillon } from '../lib/types.ts';
 import { etatTicket, ecartLigne, ligneCoherente } from '../lib/coherence.ts';
 import { enFrancs, poidsDeduit } from '../lib/montants.ts';
 import { ligneVide } from '../lib/lecteurTicket.ts';
-import { ChampMontant, ChampNombre, CANTONS } from '../composants/Champs.tsx';
+import { ChampMontant, ChampNombre, CANTONS, dateSuisse } from '../composants/Champs.tsx';
 import {
   controlerPrix,
   magasinParFiliale,
   rechercherProduits,
   soumettreTicket,
   type ControlePrix,
-  type Magasin,
   type ResultatEnvoi,
   type ResultatRecherche,
 } from '../api.ts';
 
+type Modifier = (maj: (brouillon: TicketBrouillon) => TicketBrouillon) => void;
+
 interface Proprietes {
   brouillon: TicketBrouillon;
   /** Reçoit une fonction de mise à jour, appliquée à la dernière version. */
-  onChange: (maj: (brouillon: TicketBrouillon) => TicketBrouillon) => void;
+  onChange: Modifier;
   onEnvoye: (resultat: ResultatEnvoi) => void;
   onAbandon: () => void;
-  /** Proposé quand le ticket vient d'une photo : relire en la tournant. */
-  onRelire?: () => void;
+  /** Photo du ticket, pour comparer pendant la vérification. */
+  apercu?: string | null;
 }
 
-export function Validation({ brouillon, onChange, onEnvoye, onAbandon, onRelire }: Proprietes) {
+/** Une ligne est réglée si elle tombe juste, a un produit et rien à vérifier. */
+function ligneReglee(l: LigneBrouillon): boolean {
+  return ligneCoherente(l) && l.douteux.length === 0 && (l.produitId !== null || l.produitNom.trim().length >= 2);
+}
+
+export function Validation({ brouillon, onChange, onEnvoye, onAbandon, apercu }: Proprietes) {
   const etat = useMemo(() => etatTicket(brouillon), [brouillon]);
+  const [ouvertes, setOuvertes] = useState<Set<string>>(() => new Set());
   const [envoi, setEnvoi] = useState<'repos' | 'en_cours'>('repos');
   const [erreurEnvoi, setErreurEnvoi] = useState<string | null>(null);
+  const [detailsProblemes, setDetailsProblemes] = useState(false);
 
   const majTicket = (patch: (b: TicketBrouillon) => Partial<TicketBrouillon>, champ?: ChampEntete) => {
     onChange((b) => ({
@@ -64,6 +72,20 @@ export function Validation({ brouillon, onChange, onEnvoye, onAbandon, onRelire 
     }));
   };
 
+  const basculer = (cle: string) =>
+    setOuvertes((o) => {
+      const n = new Set(o);
+      if (n.has(cle)) n.delete(cle);
+      else n.add(cle);
+      return n;
+    });
+
+  const ajouterLigne = () => {
+    const ligne = ligneVide();
+    onChange((b) => ({ ...b, lignes: [...b.lignes, ligne] }));
+    setOuvertes((o) => new Set(o).add(ligne.cle));
+  };
+
   const envoyer = async () => {
     setEnvoi('en_cours');
     setErreurEnvoi(null);
@@ -76,84 +98,129 @@ export function Validation({ brouillon, onChange, onEnvoye, onAbandon, onRelire 
     }
   };
 
+  // Libellé déjà vu : son produit est retrouvé d'office (alias, score 1),
+  // même pour les lignes fermées. Une seule recherche par libellé.
+  const dejaCherches = useRef(new Set<string>());
+  useEffect(() => {
+    for (const ligne of brouillon.lignes) {
+      const libelle = ligne.libelle.trim();
+      const cle = `${ligne.cle}|${libelle}`;
+      if (ligne.produitId || libelle.length < 2 || dejaCherches.current.has(cle)) continue;
+      dejaCherches.current.add(cle);
+      rechercherProduits(libelle, 3)
+        .then((resultats) => {
+          const exact = resultats.find((r) => r.score >= 1);
+          if (exact) majLigne(ligne.cle, { produitId: exact.produit_id, produitNom: exact.nom });
+        })
+        .catch(() => undefined);
+    }
+    // majLigne applique une mise à jour sur la dernière version : sûr ici.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [brouillon.lignes]);
+
+  const aRegler = brouillon.lignes.filter((l) => !ligneReglee(l)).length;
+
   return (
     <div className="validation">
       <header className="entete-ecran">
         <h1>Vérifier le ticket</h1>
         <p className="discret">
-          Les valeurs <mark className="exemple-douteux">surlignées</mark> sont à vérifier ; vos corrections
-          s’affichent <span className="exemple-corrige">au stylo</span>.
+          {aRegler === 0
+            ? 'Comparez avec le ticket, puis envoyez.'
+            : `Touchez une ligne pour la corriger. ${aRegler} ligne${aRegler > 1 ? 's' : ''} à vérifier.`}
         </p>
-        {onRelire ? (
-          <button type="button" className="bouton-lien" onClick={onRelire}>
-            Lecture ratée ? Relire la photo en la tournant d’un quart de tour
-          </button>
+        {apercu ? (
+          <details className="photo-ticket">
+            <summary>Voir la photo du ticket</summary>
+            <img src={apercu} alt="Photo du ticket en cours de vérification" />
+          </details>
         ) : null}
       </header>
 
-      <SectionMagasin brouillon={brouillon} majTicket={majTicket} />
+      <article className="ticket-papier" aria-label="Ticket">
+        <EnteteTicket brouillon={brouillon} majTicket={majTicket} />
 
-      <section className="ticket-papier" aria-label="Lignes du ticket">
-        <h2>Articles</h2>
-        <ol className="lignes">
-          {brouillon.lignes.map((ligne, index) => (
-            <CarteLigne
+        <ol className="lignes" aria-label="Articles">
+          {brouillon.lignes.map((ligne) => (
+            <LigneTicket
               key={ligne.cle}
-              numero={index + 1}
               ligne={ligne}
               date={brouillon.date}
+              ouverte={ouvertes.has(ligne.cle)}
+              basculer={() => basculer(ligne.cle)}
               majLigne={majLigne}
               supprimer={() => onChange((b) => ({ ...b, lignes: b.lignes.filter((l) => l.cle !== ligne.cle) }))}
             />
           ))}
         </ol>
-        <button
-          type="button"
-          className="bouton-secondaire"
-          onClick={() => onChange((b) => ({ ...b, lignes: [...b.lignes, ligneVide()] }))}
-        >
-          Ajouter une ligne
+
+        <button type="button" className="bouton-ajout-ligne" onClick={ajouterLigne}>
+          + Ajouter une ligne
         </button>
 
         <div className="totaux">
-          <ChampMontant
-            etiquette="Total CHF du ticket"
-            valeur={brouillon.totalCentimes}
-            douteux={brouillon.douteux.includes('total')}
-            onChange={(v) => majTicket(() => ({ totalCentimes: v }), 'total')}
-          />
-          <ChampMontant
-            etiquette="« Vous économisez au total »"
-            valeur={brouillon.rabaisTotalCentimes}
-            onChange={(v) => majTicket(() => ({ rabaisTotalCentimes: v ?? 0 }), 'rabaisTotal')}
-          />
-          <p className={etat.ecartTotalCentimes === 0 ? 'somme somme-juste' : 'somme somme-fausse'}>
-            Somme des lignes : <span className="chiffre">{enFrancs(etat.sommeLignesCentimes)}</span>
-            {etat.ecartTotalCentimes !== null && etat.ecartTotalCentimes !== 0 ? (
-              <> (écart de <span className="chiffre">{enFrancs(etat.ecartTotalCentimes)}</span>)</>
-            ) : null}
-          </p>
+          <div className="total-ligne">
+            <span>Somme des lignes</span>
+            <span className={`chiffre ${etat.ecartTotalCentimes === 0 ? 'juste' : 'faux'}`}>
+              {enFrancs(etat.sommeLignesCentimes)}
+            </span>
+          </div>
+          <div className="totaux-champs">
+            <ChampMontant
+              etiquette="Total CHF imprimé"
+              valeur={brouillon.totalCentimes}
+              douteux={brouillon.douteux.includes('total')}
+              onChange={(v) => majTicket(() => ({ totalCentimes: v }), 'total')}
+            />
+            <ChampMontant
+              etiquette="Vous économisez"
+              valeur={brouillon.rabaisTotalCentimes}
+              onChange={(v) => majTicket(() => ({ rabaisTotalCentimes: v ?? 0 }), 'rabaisTotal')}
+            />
+          </div>
+          {etat.ecartTotalCentimes !== null && etat.ecartTotalCentimes !== 0 ? (
+            <p className="ecart">
+              Écart de <span className="chiffre">{enFrancs(Math.abs(etat.ecartTotalCentimes))}</span> avec le total imprimé :
+              une ligne manque ou est mal lue.
+            </p>
+          ) : null}
         </div>
-      </section>
+      </article>
 
       <footer className="pied-validation">
-        {etat.problemes.length > 0 ? (
-          <ul className="problemes">
-            {etat.problemes.map((p) => (
-              <li key={p}>{p}</li>
-            ))}
-          </ul>
+        {etat.pret ? (
+          <p className="statut statut-pret">Tout tombe juste.</p>
         ) : (
-          <p className="pret">Tout tombe juste.</p>
+          <div className="statut">
+            <button
+              type="button"
+              className="bouton-lien statut-a-regler"
+              aria-expanded={detailsProblemes}
+              onClick={() => setDetailsProblemes(!detailsProblemes)}
+            >
+              {etat.problemes.length === 1 ? '1 point à régler' : `${etat.problemes.length} points à régler`}
+            </button>
+            {detailsProblemes ? (
+              <ul className="problemes">
+                {etat.problemes.map((p) => (
+                  <li key={p}>{p}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         )}
-        {erreurEnvoi ? <p className="erreur" role="alert">{erreurEnvoi}</p> : null}
+        {erreurEnvoi ? (
+          <p className="erreur" role="alert">
+            {erreurEnvoi}
+          </p>
+        ) : null}
         <div className="actions">
           <button type="button" className="bouton-secondaire" onClick={onAbandon}>
             Abandonner
           </button>
           <button
             type="button"
-            className="bouton-principal"
+            className="bouton-principal bouton-envoyer"
             disabled={!etat.pret || envoi === 'en_cours'}
             onClick={envoyer}
           >
@@ -166,10 +233,10 @@ export function Validation({ brouillon, onChange, onEnvoye, onAbandon, onRelire 
 }
 
 // ---------------------------------------------------------------------
-// Magasin, date et heure
+// En-tête : magasin, date, heure
 // ---------------------------------------------------------------------
 
-function SectionMagasin({
+function EnteteTicket({
   brouillon,
   majTicket,
 }: {
@@ -177,37 +244,36 @@ function SectionMagasin({
   majTicket: (patch: (b: TicketBrouillon) => Partial<TicketBrouillon>, champ?: ChampEntete) => void;
 }) {
   const m = brouillon.magasin;
-  const [connu, setConnu] = useState<Magasin | null>(null);
-  const [recherche, setRecherche] = useState<'repos' | 'en_cours'>('repos');
+  const [connu, setConnu] = useState(false);
+  const [edition, setEdition] = useState(false);
 
   useEffect(() => {
     let actif = true;
     if (!/^\d{4,8}$/.test(m.numeroFiliale)) {
-      setConnu(null);
+      setConnu(false);
       return;
     }
-    setRecherche('en_cours');
     magasinParFiliale(m.numeroFiliale)
       .then((magasin) => {
         if (!actif) return;
-        setConnu(magasin);
+        setConnu(magasin !== null);
         if (magasin) {
-          majTicket(() => ({
-            magasin: {
-              numeroFiliale: magasin.numero_filiale,
-              nom: magasin.nom,
-              format: magasin.format,
-              localite: magasin.localite ?? '',
-              canton: magasin.canton,
-            },
-          }), 'magasin');
+          majTicket(
+            () => ({
+              magasin: {
+                numeroFiliale: magasin.numero_filiale,
+                nom: magasin.nom,
+                format: magasin.format,
+                localite: magasin.localite ?? '',
+                canton: magasin.canton,
+              },
+            }),
+            'magasin',
+          );
         }
       })
       .catch(() => {
-        if (actif) setConnu(null);
-      })
-      .finally(() => {
-        if (actif) setRecherche('repos');
+        if (actif) setConnu(false);
       });
     return () => {
       actif = false;
@@ -216,18 +282,47 @@ function SectionMagasin({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [m.numeroFiliale]);
 
+  const complet =
+    /^\d{4,8}$/.test(m.numeroFiliale) &&
+    m.nom.trim().length >= 2 &&
+    m.format !== '' &&
+    /^[A-Z]{2}$/.test(m.canton) &&
+    /^\d{4}-\d{2}-\d{2}$/.test(brouillon.date) &&
+    /^\d{2}:\d{2}:\d{2}$/.test(brouillon.heure);
+  const douteux = brouillon.douteux.some((d) => d !== 'total' && d !== 'rabaisTotal');
+
+  if (complet && !douteux && !edition) {
+    return (
+      <div className="entete-ticket">
+        <div>
+          <p className="entete-ticket-magasin">{m.nom}</p>
+          <p className="discret">
+            {[m.localite, m.canton, `filiale ${m.numeroFiliale}`].filter(Boolean).join(', ')}
+          </p>
+          <p className="entete-ticket-date chiffre">
+            {dateSuisse(brouillon.date)} à {brouillon.heure}
+          </p>
+        </div>
+        <button type="button" className="bouton-lien" onClick={() => setEdition(true)}>
+          Modifier
+        </button>
+      </div>
+    );
+  }
+
   const majMagasin = (patch: Partial<TicketBrouillon['magasin']>) =>
     majTicket((b) => ({ magasin: { ...b.magasin, ...patch } }), 'magasin');
+  const d = (champ: ChampEntete) => (brouillon.douteux.includes(champ) ? 'est-douteux' : '');
 
   return (
-    <section className="bloc" aria-label="Magasin et date">
-      <h2>Magasin et date</h2>
+    <div className="entete-ticket entete-ticket-edition">
       <div className="grille-champs">
-        <label className={`champ champ-chiffre ${brouillon.douteux.includes('filiale') ? 'est-douteux' : ''}`}>
-          <span className="champ-etiquette">N° de filiale (pied du ticket)</span>
+        <label className={`champ champ-chiffre ${d('filiale')}`}>
+          <span className="champ-etiquette">N° de filiale</span>
           <input
             type="text"
             inputMode="numeric"
+            placeholder="064590"
             value={m.numeroFiliale}
             onChange={(e) => {
               const numero = e.target.value.replace(/\D/g, '');
@@ -235,7 +330,7 @@ function SectionMagasin({
             }}
           />
         </label>
-        <label className={`champ ${brouillon.douteux.includes('date') ? 'est-douteux' : ''}`}>
+        <label className={`champ ${d('date')}`}>
           <span className="champ-etiquette">Date</span>
           <input
             type="date"
@@ -246,8 +341,8 @@ function SectionMagasin({
             }}
           />
         </label>
-        <label className={`champ ${brouillon.douteux.includes('heure') ? 'est-douteux' : ''}`}>
-          <span className="champ-etiquette">Heure (pied du ticket)</span>
+        <label className={`champ ${d('heure')}`}>
+          <span className="champ-etiquette">Heure</span>
           <input
             type="time"
             step={1}
@@ -259,18 +354,20 @@ function SectionMagasin({
           />
         </label>
       </div>
-
-      {recherche === 'en_cours' ? <p className="discret">Recherche du magasin…</p> : null}
+      <p className="aide">Numéro de filiale, date et heure : dernière ligne du ticket, sous « Filiale … Date Heure ».</p>
 
       {connu ? (
-        <p className="magasin-connu">
-          {connu.nom}
-          {connu.localite ? `, ${connu.localite}` : ''} ({connu.canton})
+        <p className="entete-ticket-magasin">
+          {m.nom}
+          <span className="discret">
+            {' '}
+            {[m.localite, m.canton].filter(Boolean).join(', ')}
+          </span>
         </p>
       ) : (
-        <div className={`grille-champs ${brouillon.douteux.includes('magasin') ? 'bloc-douteux' : ''}`}>
+        <div className={`grille-champs ${d('magasin')}`}>
           <label className="champ champ-large">
-            <span className="champ-etiquette">Nom du magasin</span>
+            <span className="champ-etiquette">Magasin (en-tête du ticket)</span>
             <input type="text" value={m.nom} placeholder="MM Métropole Renens" onChange={(e) => majMagasin({ nom: e.target.value })} />
           </label>
           <label className="champ">
@@ -299,50 +396,96 @@ function SectionMagasin({
           </label>
         </div>
       )}
-    </section>
+      {complet ? (
+        <button type="button" className="bouton-lien" onClick={() => setEdition(false)}>
+          Terminé
+        </button>
+      ) : null}
+    </div>
   );
 }
 
 // ---------------------------------------------------------------------
-// Une ligne d'article
+// Une ligne d'article : rangée compacte, éditeur au toucher
 // ---------------------------------------------------------------------
 
-function CarteLigne({
-  numero,
+function resumeQuantite(l: LigneBrouillon): string {
+  const prix = l.prixCentimes === null ? '?' : enFrancs(l.prixCentimes);
+  if (l.unite === 'kg') return `${l.quantite.toFixed(3)} kg × ${prix}/kg`;
+  return l.quantite === 1 ? prix : `${l.quantite} × ${prix}`;
+}
+
+function LigneTicket({
   ligne,
   date,
+  ouverte,
+  basculer,
   majLigne,
   supprimer,
 }: {
-  numero: number;
   ligne: LigneBrouillon;
   date: string;
+  ouverte: boolean;
+  basculer: () => void;
   majLigne: (cle: string, patch: Partial<LigneBrouillon>, champ?: ChampLigne) => void;
   supprimer: () => void;
 }) {
-  const coherente = ligneCoherente(ligne);
-  const ecart = ecartLigne(ligne);
-  const pese = ligne.unite === 'kg';
-  const d = (champ: ChampLigne) => ligne.douteux.includes(champ);
-  const c = (champ: ChampLigne) => ligne.corriges.includes(champ);
+  const reglee = ligneReglee(ligne);
   const maj = (patch: Partial<LigneBrouillon>, champ?: ChampLigne) => majLigne(ligne.cle, patch, champ);
 
   return (
-    <li className={`ligne ${coherente ? '' : 'ligne-fausse'}`}>
-      <div className="ligne-tete">
-        <span className="ligne-numero">{numero}</span>
-        <label className={`champ champ-large ${d('libelle') ? 'est-douteux' : ''} ${c('libelle') ? 'est-corrige' : ''}`}>
-          <span className="champ-etiquette">Libellé du ticket</span>
-          <input type="text" value={ligne.libelle} onChange={(e) => maj({ libelle: e.target.value }, 'libelle')} />
-        </label>
-        <button type="button" className="bouton-icone" aria-label={`Supprimer la ligne ${numero}`} onClick={supprimer}>
-          ×
-        </button>
-      </div>
+    <li className={`ligne ${reglee ? '' : 'ligne-a-verifier'} ${ouverte ? 'ligne-ouverte' : ''}`}>
+      <button type="button" className="ligne-rangee" aria-expanded={ouverte} onClick={basculer}>
+        <span className="ligne-texte">
+          <span className="ligne-libelle">{ligne.libelle || 'Nouvelle ligne'}</span>
+          <span className="ligne-detail chiffre">
+            {resumeQuantite(ligne)}
+            {ligne.rabaisCentimes > 0 ? <span className="ligne-rabais"> − {enFrancs(ligne.rabaisCentimes)}</span> : null}
+          </span>
+          <span className="ligne-produit">
+            {ligne.produitId ? `→ ${ligne.produitNom}` : ligne.produitNom.trim() ? `Nouveau produit : ${ligne.produitNom}` : 'Produit à choisir'}
+          </span>
+        </span>
+        <span className="ligne-droite">
+          <span className="ligne-total chiffre">{ligne.totalCentimes === null ? '–' : enFrancs(ligne.totalCentimes)}</span>
+          {reglee ? null : <span className="pastille">À vérifier</span>}
+        </span>
+      </button>
+
+      {ouverte ? <EditeurLigne ligne={ligne} date={date} maj={maj} supprimer={supprimer} fermer={basculer} /> : null}
+    </li>
+  );
+}
+
+function EditeurLigne({
+  ligne,
+  date,
+  maj,
+  supprimer,
+  fermer,
+}: {
+  ligne: LigneBrouillon;
+  date: string;
+  maj: (patch: Partial<LigneBrouillon>, champ?: ChampLigne) => void;
+  supprimer: () => void;
+  fermer: () => void;
+}) {
+  const pese = ligne.unite === 'kg';
+  const d = (champ: ChampLigne) => ligne.douteux.includes(champ);
+  const c = (champ: ChampLigne) => ligne.corriges.includes(champ);
+  const ecart = ecartLigne(ligne);
+  const coherente = ligneCoherente(ligne);
+
+  return (
+    <div className="editeur-ligne">
+      <label className={`champ champ-large ${d('libelle') ? 'est-douteux' : ''} ${c('libelle') ? 'est-corrige' : ''}`}>
+        <span className="champ-etiquette">Libellé imprimé</span>
+        <input type="text" value={ligne.libelle} onChange={(e) => maj({ libelle: e.target.value }, 'libelle')} />
+      </label>
 
       <ChoixProduit ligne={ligne} maj={maj} />
 
-      <div className="ligne-unite" role="radiogroup" aria-label="Vente">
+      <div className="segments" role="radiogroup" aria-label="Mode de vente">
         <button
           type="button"
           role="radio"
@@ -356,19 +499,19 @@ function CarteLigne({
           type="button"
           role="radio"
           aria-checked={pese}
-          className={`interrupteur ${pese ? 'actif' : ''} ${d('unite') ? 'est-douteux' : ''}`}
+          className={`interrupteur ${pese ? 'actif' : ''}`}
           onClick={() => maj({ unite: 'kg' }, 'unite')}
         >
           Pesé
         </button>
       </div>
 
-      <div className="ligne-chiffres">
+      <div className="grille-chiffres">
         {pese ? (
-          <ChampNombre etiquette="Poids" suffixe="kg" valeur={ligne.quantite} decimales={3} lectureSeule onChange={() => undefined} />
+          <ChampNombre etiquette="Poids calculé" suffixe="kg" valeur={ligne.quantite} decimales={3} lectureSeule onChange={() => undefined} />
         ) : (
           <ChampNombre
-            etiquette="Quant."
+            etiquette="Quantité"
             valeur={ligne.quantite}
             douteux={d('quantite')}
             corrige={c('quantite')}
@@ -376,8 +519,7 @@ function CarteLigne({
           />
         )}
         <ChampMontant
-          etiquette="Prix"
-          suffixe={pese ? '/kg' : undefined}
+          etiquette={pese ? 'Prix au kilo' : 'Prix'}
           valeur={ligne.prixCentimes}
           douteux={d('prix')}
           corrige={c('prix')}
@@ -400,102 +542,91 @@ function CarteLigne({
       </div>
 
       {!coherente ? (
-        <p className="ligne-message">
+        <p className="ecart">
           {ecart === null
-            ? 'Complétez le prix et le total.'
-            : `Quantité × prix − rabais ne tombe pas juste (écart de ${enFrancs(ecart)}).`}
+            ? 'Indiquez le prix et le total.'
+            : `Quantité × prix − rabais donne ${enFrancs((ligne.totalCentimes ?? 0) + ecart)}, pas ${enFrancs(ligne.totalCentimes)}.`}
         </p>
       ) : null}
 
       <ControleDuPrix ligne={ligne} date={date} maj={maj} />
-    </li>
+
+      <div className="actions actions-editeur">
+        <button type="button" className="bouton-lien bouton-danger" onClick={supprimer}>
+          Supprimer la ligne
+        </button>
+        <button
+          type="button"
+          className="bouton-secondaire"
+          onClick={() => {
+            // Fermer vaut confirmation des valeurs affichées.
+            if (ligne.douteux.length > 0 && coherente) maj({ douteux: [] });
+            fermer();
+          }}
+        >
+          {ligne.douteux.length > 0 && coherente ? 'Valider la ligne' : 'Fermer'}
+        </button>
+      </div>
+    </div>
   );
 }
 
 /** Choix du produit canonique : alias connu, suggestion, ou nouveau produit. */
 function ChoixProduit({ ligne, maj }: { ligne: LigneBrouillon; maj: (patch: Partial<LigneBrouillon>, champ?: ChampLigne) => void }) {
   const [suggestions, setSuggestions] = useState<ResultatRecherche[]>([]);
-  const [recherche, setRecherche] = useState(ligne.libelle);
+  const [recherche, setRecherche] = useState('');
 
-  // Libellé déjà vu : le produit est choisi d'office (score 1).
   useEffect(() => {
     if (ligne.produitId || ligne.libelle.trim().length < 2) return;
     let actif = true;
     const minuterie = window.setTimeout(() => {
-      rechercherProduits(ligne.libelle, 5)
-        .then((resultats) => {
-          if (!actif) return;
-          const exact = resultats.find((r) => r.score >= 1);
-          if (exact) maj({ produitId: exact.produit_id, produitNom: exact.nom });
-          else setSuggestions(resultats);
+      rechercherProduits(recherche.trim().length >= 2 ? recherche : ligne.libelle, 5)
+        .then((r) => {
+          if (actif) setSuggestions(r);
         })
         .catch(() => undefined);
-    }, 400);
+    }, 300);
     return () => {
       actif = false;
       window.clearTimeout(minuterie);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ligne.libelle, ligne.produitId]);
+  }, [ligne.libelle, ligne.produitId, recherche]);
 
   if (ligne.produitId) {
     return (
       <div className="produit-choisi">
-        <span>
-          Produit : <strong>{ligne.produitNom}</strong>
-        </span>
-        <button
-          type="button"
-          className="bouton-lien"
-          onClick={() => {
-            setRecherche(ligne.libelle);
-            maj({ produitId: null, produitNom: ligne.libelle });
-          }}
-        >
+        <span className="champ-etiquette">Produit</span>
+        <span className="produit-choisi-nom">{ligne.produitNom}</span>
+        <button type="button" className="bouton-lien" onClick={() => maj({ produitId: null, produitNom: ligne.libelle })}>
           Changer
         </button>
       </div>
     );
   }
 
-  const chercher = (texte: string) => {
-    setRecherche(texte);
-    if (texte.trim().length < 2) {
-      setSuggestions([]);
-      return;
-    }
-    rechercherProduits(texte, 5).then(setSuggestions).catch(() => undefined);
-  };
-
   return (
     <div className="produit-choix">
+      <label className="champ champ-large">
+        <span className="champ-etiquette">Produit</span>
+        <input
+          type="search"
+          value={recherche}
+          placeholder="Chercher un produit existant"
+          onChange={(e) => setRecherche(e.target.value)}
+        />
+      </label>
       {suggestions.length > 0 ? (
         <div className="suggestions">
-          <span className="champ-etiquette">Produit existant ?</span>
           {suggestions.map((s) => (
-            <button
-              key={s.produit_id}
-              type="button"
-              className="suggestion"
-              onClick={() => maj({ produitId: s.produit_id, produitNom: s.nom })}
-            >
+            <button key={s.produit_id} type="button" className="suggestion" onClick={() => maj({ produitId: s.produit_id, produitNom: s.nom })}>
               {s.nom}
             </button>
           ))}
         </div>
       ) : null}
       <label className="champ champ-large">
-        <span className="champ-etiquette">Chercher un produit</span>
-        <input type="search" value={recherche} onChange={(e) => chercher(e.target.value)} />
-      </label>
-      <label className="champ champ-large">
-        <span className="champ-etiquette">Ou créer le produit</span>
-        <input
-          type="text"
-          value={ligne.produitNom}
-          placeholder="Nom lisible, par ex. Linguine Agnesi n° 10"
-          onChange={(e) => maj({ produitNom: e.target.value })}
-        />
+        <span className="champ-etiquette">Sinon, nom du nouveau produit</span>
+        <input type="text" value={ligne.produitNom} onChange={(e) => maj({ produitNom: e.target.value })} />
       </label>
     </div>
   );
@@ -534,8 +665,8 @@ function ControleDuPrix({
   return (
     <div className="alerte-prix" role="status">
       <p>
-        Prix inhabituel : le prix normal médian est de <span className="chiffre">{enFrancs(controle.mediane_centimes)}</span>{' '}
-        sur les {controle.nb} derniers relevés. Vérifiez la lecture.
+        Prix inhabituel : d’habitude <span className="chiffre">{enFrancs(controle.mediane_centimes)}</span> ({controle.nb} relevés
+        récents). Vérifiez la lecture.
       </p>
       <label className="case">
         <input type="checkbox" checked={ligne.prixConfirme} onChange={(e) => maj({ prixConfirme: e.target.checked })} />

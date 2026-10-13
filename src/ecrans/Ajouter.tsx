@@ -1,12 +1,13 @@
-// Ajout d'un ticket : photo ou capture → lecture dans le téléphone →
-// validation → envoi. Voies de secours : import depuis l'app Claude,
-// saisie à la main. Le ticket en cours est gardé en brouillon local.
+// Ajout d'un ticket. Voie principale : photo → lecture automatique
+// (fonction « lire-ticket », modèle d'image Mistral) → vérification →
+// envoi. Voies de secours : app Claude (copier-coller), saisie à la main.
+// Le ticket en cours est gardé en brouillon local.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { TicketBrouillon } from '../lib/types.ts';
 import { ligneVide } from '../lib/lecteurTicket.ts';
 import { CONSIGNE_CLAUDE, ErreurImport, lireReponseClaude } from '../lib/importClaude.ts';
-import { lirePhoto, type Progression } from '../ocr/lecture.ts';
+import { lirePhotoParIA, preparerPhoto } from '../lecture/analyse.ts';
 import { effacerBrouillon, enregistrerBrouillon, lireBrouillon } from '../stockageLocal.ts';
 import { Validation } from './Validation.tsx';
 import type { ResultatEnvoi } from '../api.ts';
@@ -15,7 +16,8 @@ import { lien } from '../routeur.ts';
 
 type Etape =
   | { nom: 'depart' }
-  | { nom: 'lecture'; progression: Progression }
+  | { nom: 'lecture'; texte: string }
+  | { nom: 'echec'; message: string }
   | { nom: 'import' }
   | { nom: 'validation' }
   | { nom: 'envoye'; resultat: ResultatEnvoi };
@@ -33,12 +35,46 @@ function brouillonVide(): TicketBrouillon {
   };
 }
 
+/** Bouton qui ouvre l'appareil photo ou la photothèque. */
+function BoutonPhoto({
+  libelle,
+  classe,
+  camera,
+  onFichier,
+  children,
+}: {
+  libelle: string;
+  classe: string;
+  camera: boolean;
+  onFichier: (f: File) => void;
+  children?: ReactNode;
+}) {
+  return (
+    <label className={classe}>
+      {children}
+      <span>{libelle}</span>
+      <input
+        type="file"
+        accept="image/*"
+        capture={camera ? 'environment' : undefined}
+        className="invisible"
+        onChange={(e) => {
+          const fichier = e.target.files?.[0];
+          e.target.value = '';
+          if (fichier) onFichier(fichier);
+        }}
+      />
+    </label>
+  );
+}
+
 export function Ajouter() {
   const [etape, setEtape] = useState<Etape>({ nom: 'depart' });
   const [brouillon, setBrouillon] = useState<TicketBrouillon | null>(null);
   const [enAttente] = useState<TicketBrouillon | null>(lireBrouillon);
-  const [erreur, setErreur] = useState<string | null>(null);
-  const photo = useRef<{ fichier: Blob; rotation: 0 | 90 | 180 | 270 } | null>(null);
+  const [apercu, setApercu] = useState<string | null>(null);
+  const derniereLecture = useRef(0);
+  const photoPreparee = useRef<string | null>(null);
 
   useEffect(() => {
     if (brouillon && etape.nom === 'validation') enregistrerBrouillon(brouillon);
@@ -48,57 +84,82 @@ export function Ajouter() {
     setBrouillon((b) => (b ? maj(b) : b));
   };
 
-  const lire = async (fichier: Blob, rotation?: 0 | 90 | 180 | 270) => {
-    setErreur(null);
-    setEtape({ nom: 'lecture', progression: { etape: 'Préparation de l’image', part: null } });
+  const lire = async (base64: string) => {
+    const numero = ++derniereLecture.current;
+    setEtape({ nom: 'lecture', texte: 'Lecture du ticket' });
     try {
-      const resultat = await lirePhoto(
-        fichier,
-        (progression) => setEtape({ nom: 'lecture', progression }),
-        rotation,
-      );
-      photo.current = { fichier, rotation: resultat.rotation };
-      setBrouillon(resultat.brouillon.lignes.length > 0 ? resultat.brouillon : { ...resultat.brouillon, lignes: [ligneVide()] });
+      const lu = await lirePhotoParIA(base64);
+      if (numero !== derniereLecture.current) return; // lecture annulée entre-temps
+      setBrouillon(lu.lignes.length > 0 ? lu : { ...lu, lignes: [ligneVide()] });
       setEtape({ nom: 'validation' });
     } catch (e) {
-      setErreur(
-        `La lecture a échoué : ${e instanceof Error ? e.message : String(e)}. ` +
-          'Essayez une autre photo, l’import depuis Claude ou la saisie à la main.',
-      );
-      setEtape({ nom: 'depart' });
+      if (numero !== derniereLecture.current) return;
+      setEtape({ nom: 'echec', message: e instanceof Error ? e.message : String(e) });
     }
   };
 
-  const relire = () => {
-    if (!photo.current) return;
-    const suivante = ((photo.current.rotation + 90) % 360) as 0 | 90 | 180 | 270;
-    void lire(photo.current.fichier, suivante);
+  const nouvellePhoto = async (fichier: File) => {
+    setEtape({ nom: 'lecture', texte: 'Préparation de la photo' });
+    try {
+      const { base64, apercu: image } = await preparerPhoto(fichier);
+      photoPreparee.current = base64;
+      setApercu(image);
+      await lire(base64);
+    } catch (e) {
+      setEtape({ nom: 'echec', message: e instanceof Error ? e.message : String(e) });
+    }
   };
 
-  const terminer = (resultat: ResultatEnvoi) => {
-    if (resultat.statut === 'ok') effacerBrouillon();
-    setEtape({ nom: 'envoye', resultat });
-  };
-
-  const abandonner = () => {
+  const recommencer = () => {
+    derniereLecture.current += 1;
     effacerBrouillon();
     setBrouillon(null);
-    photo.current = null;
+    setApercu(null);
+    photoPreparee.current = null;
     setEtape({ nom: 'depart' });
+  };
+
+  const saisirAlaMain = () => {
+    setBrouillon(brouillonVide());
+    setEtape({ nom: 'validation' });
   };
 
   // -------------------------------------------------------------------
   if (etape.nom === 'lecture') {
-    const part = etape.progression.part;
+    return (
+      <div className="ecran ecran-lecture">
+        {apercu ? <img className="apercu-lecture" src={apercu} alt="Photo du ticket en cours de lecture" /> : null}
+        <h1>{etape.texte}…</h1>
+        <div className="barre-attente" role="progressbar" aria-label={etape.texte} />
+        <p className="discret">Comptez une dizaine de secondes. Vous vérifierez chaque ligne avant l’envoi.</p>
+        <button type="button" className="bouton-secondaire" onClick={recommencer}>
+          Annuler
+        </button>
+      </div>
+    );
+  }
+
+  if (etape.nom === 'echec') {
     return (
       <div className="ecran">
-        <h1>Lecture du ticket</h1>
-        <p>{etape.progression.etape}…</p>
-        <progress max={1} value={part ?? undefined} aria-label="Avancement de la lecture" />
-        <p className="discret">
-          La lecture se fait dans votre téléphone ; la photo n’est envoyée nulle part. La première fois, le moteur de
-          lecture (quelques Mo) est téléchargé puis gardé pour les fois suivantes.
+        <h1>La lecture n’a pas abouti</h1>
+        <p className="erreur" role="alert">
+          {etape.message}
         </p>
+        <div className="actions actions-colonne">
+          {photoPreparee.current ? (
+            <button type="button" className="bouton-principal" onClick={() => void lire(photoPreparee.current as string)}>
+              Réessayer avec la même photo
+            </button>
+          ) : null}
+          <BoutonPhoto libelle="Prendre une autre photo" classe="bouton-secondaire" camera onFichier={(f) => void nouvellePhoto(f)} />
+          <button type="button" className="bouton-secondaire" onClick={saisirAlaMain}>
+            Saisir le ticket à la main
+          </button>
+          <button type="button" className="bouton-lien" onClick={() => setEtape({ nom: 'import' })}>
+            Passer par l’app Claude
+          </button>
+        </div>
       </div>
     );
   }
@@ -108,9 +169,14 @@ export function Ajouter() {
       <Validation
         brouillon={brouillon}
         onChange={modifier}
-        onEnvoye={terminer}
-        onAbandon={abandonner}
-        onRelire={photo.current ? relire : undefined}
+        apercu={apercu}
+        onEnvoye={(resultat) => {
+          if (resultat.statut === 'ok') effacerBrouillon();
+          setEtape({ nom: 'envoye', resultat });
+        }}
+        onAbandon={() => {
+          if (window.confirm('Abandonner ce ticket ? Les corrections seront perdues.')) recommencer();
+        }}
       />
     );
   }
@@ -119,7 +185,6 @@ export function Ajouter() {
     return (
       <ImportClaude
         onLu={(b) => {
-          photo.current = null;
           setBrouillon(b);
           setEtape({ nom: 'validation' });
         }}
@@ -131,39 +196,43 @@ export function Ajouter() {
   if (etape.nom === 'envoye') {
     const r = etape.resultat;
     return (
-      <div className="ecran">
+      <div className="ecran ecran-fin">
         {r.statut === 'ok' ? (
           <>
+            <p className="marque-fin" aria-hidden="true">
+              ✓
+            </p>
             <h1>Ticket enregistré</h1>
             <p>
-              {r.nbLignes} ligne{r.nbLignes > 1 ? 's' : ''} ajoutée{r.nbLignes > 1 ? 's' : ''} à la base commune. Merci !
+              {r.nbLignes} prix ajouté{r.nbLignes > 1 ? 's' : ''} à la base. Merci !
             </p>
             {r.lignesAVerifier.length > 0 ? (
               <p className="alerte-prix">
-                {r.lignesAVerifier.length === 1 ? 'Un prix inhabituel est' : `${r.lignesAVerifier.length} prix inhabituels sont`}{' '}
-                mis de côté en attendant votre confirmation, dans <a href={lien('profil')}>Profil</a>.
+                {r.lignesAVerifier.length === 1 ? 'Un prix inhabituel est mis' : `${r.lignesAVerifier.length} prix inhabituels sont mis`} de
+                côté en attendant votre confirmation, dans <a href={lien('profil')}>Profil</a>.
               </p>
             ) : null}
           </>
         ) : (
           <>
-            <h1>Ticket déjà enregistré</h1>
+            <h1>Déjà enregistré</h1>
             <p>Ce ticket (même magasin, date, heure et total) est déjà dans la base. Rien n’a été ajouté.</p>
           </>
         )}
-        <div className="actions">
+        <div className="actions actions-colonne">
           <button
             type="button"
             className="bouton-principal"
             onClick={() => {
-              if (r.statut === 'doublon') effacerBrouillon();
-              setBrouillon(null);
-              photo.current = null;
-              setEtape({ nom: 'depart' });
+              effacerBrouillon();
+              recommencer();
             }}
           >
             Ajouter un autre ticket
           </button>
+          <a className="bouton-secondaire" href={lien('')}>
+            Retour à l’accueil
+          </a>
         </div>
       </div>
     );
@@ -172,18 +241,18 @@ export function Ajouter() {
   // Départ ---------------------------------------------------------------
   return (
     <div className="ecran">
-      <h1>Ajouter un ticket</h1>
+      <header className="entete-ecran">
+        <h1>Nouveau ticket</h1>
+        <p className="discret">Photographiez le ticket : il est lu automatiquement, puis vous vérifiez avant l’envoi.</p>
+      </header>
 
       {enAttente && !brouillon ? (
-        <div className="bloc bloc-reprise">
+        <div className="carte-reprise">
           <p>
-            Un ticket est en cours de vérification
+            Un ticket attend votre vérification
             {enAttente.date ? ` (${dateSuisse(enAttente.date)}, ${enAttente.lignes.length} lignes)` : ''}.
           </p>
           <div className="actions">
-            <button type="button" className="bouton-secondaire" onClick={abandonner}>
-              L’abandonner
-            </button>
             <button
               type="button"
               className="bouton-principal"
@@ -192,69 +261,43 @@ export function Ajouter() {
                 setEtape({ nom: 'validation' });
               }}
             >
-              Le reprendre
+              Reprendre
+            </button>
+            <button type="button" className="bouton-lien" onClick={recommencer}>
+              L’abandonner
             </button>
           </div>
         </div>
       ) : null}
 
-      {erreur ? <p className="erreur" role="alert">{erreur}</p> : null}
-
-      <div className="choix-capture">
-        <label className="bouton-principal bouton-grand">
-          Photographier le ticket
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            className="invisible"
-            onChange={(e) => {
-              const fichier = e.target.files?.[0];
-              e.target.value = '';
-              if (fichier) void lire(fichier);
-            }}
-          />
-        </label>
-        <label className="bouton-secondaire bouton-grand">
-          Importer une photo ou une capture
-          <input
-            type="file"
-            accept="image/*"
-            className="invisible"
-            onChange={(e) => {
-              const fichier = e.target.files?.[0];
-              e.target.value = '';
-              if (fichier) void lire(fichier);
-            }}
-          />
-        </label>
+      <div className="zone-photo">
+        <BoutonPhoto libelle="Photographier le ticket" classe="bouton-photo" camera onFichier={(f) => void nouvellePhoto(f)}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" className="icone-photo">
+            <path d="M4 8h3l2-3h6l2 3h3v11H4z" />
+            <circle cx="12" cy="13" r="3.5" />
+          </svg>
+        </BoutonPhoto>
+        <BoutonPhoto
+          libelle="Choisir une photo ou une capture"
+          classe="bouton-secondaire bouton-large"
+          camera={false}
+          onFichier={(f) => void nouvellePhoto(f)}
+        />
       </div>
 
-      <section className="bloc">
-        <h2>Pour une bonne lecture</h2>
-        <ul className="conseils">
-          <li>Posez le ticket à plat sur un fond sombre, bien éclairé, sans ombre.</li>
-          <li>Cadrez le ticket entier, bords compris, jusqu’à la dernière ligne « Filiale … Date Heure ».</li>
-          <li>Repliez le bas du ticket si vous ne voulez pas photographier votre numéro Cumulus : il n’est jamais lu.</li>
-        </ul>
-      </section>
+      <ul className="conseils">
+        <li>Ticket à plat, bien éclairé, cadré en entier jusqu’à la dernière ligne « Filiale … Date Heure ».</li>
+        <li>La photo est envoyée au service de lecture (Mistral, en Europe) puis oubliée. Repliez le bas du ticket si vous ne voulez pas y montrer votre numéro Cumulus.</li>
+      </ul>
 
-      <section className="bloc">
+      <section className="bloc autres-voies">
         <h2>Autres façons</h2>
         <div className="actions actions-colonne">
+          <button type="button" className="bouton-secondaire" onClick={saisirAlaMain}>
+            Saisir le ticket à la main
+          </button>
           <button type="button" className="bouton-secondaire" onClick={() => setEtape({ nom: 'import' })}>
             Faire lire le ticket par l’app Claude
-          </button>
-          <button
-            type="button"
-            className="bouton-secondaire"
-            onClick={() => {
-              photo.current = null;
-              setBrouillon(brouillonVide());
-              setEtape({ nom: 'validation' });
-            }}
-          >
-            Saisir le ticket à la main
           </button>
         </div>
       </section>
@@ -263,7 +306,7 @@ export function Ajouter() {
 }
 
 // ---------------------------------------------------------------------
-// Import depuis l'app Claude
+// Voie de secours : app Claude
 // ---------------------------------------------------------------------
 
 function ImportClaude({ onLu, onRetour }: { onLu: (b: TicketBrouillon) => void; onRetour: () => void }) {
@@ -276,40 +319,34 @@ function ImportClaude({ onLu, onRetour }: { onLu: (b: TicketBrouillon) => void; 
       await navigator.clipboard.writeText(CONSIGNE_CLAUDE);
       setCopie(true);
     } catch {
-      setErreur('Copie impossible : sélectionnez la consigne ci-dessous et copiez-la à la main.');
-    }
-  };
-
-  const lireReponse = () => {
-    setErreur(null);
-    try {
-      onLu(lireReponseClaude(reponse));
-    } catch (e) {
-      setErreur(e instanceof ErreurImport ? e.message : 'Réponse illisible.');
+      setErreur('Copie impossible : ouvrez « Voir la consigne » et copiez-la à la main.');
     }
   };
 
   return (
     <div className="ecran">
-      <h1>Faire lire le ticket par Claude</h1>
-      <p className="discret">
-        Utile quand la lecture dans le téléphone peine. La photo est alors envoyée à Claude par votre compte : repliez le bas
-        du ticket (Cumulus, paiement) avant de la prendre.
-      </p>
+      <header className="entete-ecran">
+        <h1>Passer par l’app Claude</h1>
+        <p className="discret">Utile si la lecture automatique n’est pas disponible.</p>
+      </header>
       <ol className="etapes">
         <li>
           <button type="button" className="bouton-secondaire" onClick={copier}>
             {copie ? 'Consigne copiée' : 'Copier la consigne'}
           </button>
         </li>
-        <li>Ouvrez l’app Claude, joignez la photo du ticket, collez la consigne et envoyez.</li>
-        <li>Copiez la réponse de Claude et collez-la ici :</li>
+        <li>Dans l’app Claude, joignez la photo du ticket, collez la consigne et envoyez.</li>
+        <li>Copiez la réponse de Claude et collez-la ci-dessous.</li>
       </ol>
       <label className="champ champ-large">
         <span className="champ-etiquette">Réponse de Claude</span>
         <textarea rows={8} value={reponse} onChange={(e) => setReponse(e.target.value)} />
       </label>
-      {erreur ? <p className="erreur" role="alert">{erreur}</p> : null}
+      {erreur ? (
+        <p className="erreur" role="alert">
+          {erreur}
+        </p>
+      ) : null}
       <details>
         <summary>Voir la consigne</summary>
         <pre className="consigne">{CONSIGNE_CLAUDE}</pre>
@@ -318,7 +355,19 @@ function ImportClaude({ onLu, onRetour }: { onLu: (b: TicketBrouillon) => void; 
         <button type="button" className="bouton-secondaire" onClick={onRetour}>
           Retour
         </button>
-        <button type="button" className="bouton-principal" disabled={reponse.trim() === ''} onClick={lireReponse}>
+        <button
+          type="button"
+          className="bouton-principal"
+          disabled={reponse.trim() === ''}
+          onClick={() => {
+            setErreur(null);
+            try {
+              onLu(lireReponseClaude(reponse));
+            } catch (e) {
+              setErreur(e instanceof ErreurImport ? e.message : 'Réponse illisible.');
+            }
+          }}
+        >
           Vérifier ce ticket
         </button>
       </div>

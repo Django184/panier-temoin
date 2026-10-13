@@ -1,0 +1,47 @@
+# Captures d'écran de l'app au format téléphone (données simulées),
+# publiées sur la branche « captures » pour relire l'interface.
+
+name: Captures d'écran
+
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'index.html', 'scripts/captures.mjs', '.github/workflows/captures.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: captures
+  cancel-in-progress: true
+
+jobs:
+  captures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Installation
+        run: |
+          npm install --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Build
+        run: npm run build
+      - name: Captures
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          npx --yes wait-on --timeout 60000 http://localhost:4173/panier-temoin/
+          node scripts/captures.mjs
+      - name: Publication sur la branche « captures »
+        run: |
+          cd captures
+          git init -q -b captures
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Captures de ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" captures

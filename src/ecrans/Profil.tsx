@@ -106,8 +106,11 @@ export function Profil() {
       <section className="bloc">
         <h2>Confidentialité</h2>
         <ul className="conseils">
-          <li>La photo du ticket est lue dans votre téléphone et n’est jamais envoyée ni conservée.</li>
-          <li>Seuls le magasin, la date, l’heure, les totaux et les lignes d’articles sont enregistrés. Le numéro Cumulus et les données de paiement ne sont jamais lus.</li>
+          <li>
+            La photo du ticket est envoyée au service de lecture Mistral (hébergé en Europe) le temps de la lecture ; l’app ne
+            la conserve pas. Repliez le bas du ticket pour ne pas y montrer votre numéro Cumulus.
+          </li>
+          <li>Seuls le magasin, la date, l’heure, les totaux et les lignes d’articles sont enregistrés. Le numéro Cumulus et les données de paiement ne sont jamais demandés au service de lecture.</li>
           <li>Les données sont hébergées en Suisse (Supabase, région Zurich). Les statistiques publiques ne montrent aucun contributeur.</li>
         </ul>
         <p className="discret">{MENTION_NON_AFFILIATION}</p>
