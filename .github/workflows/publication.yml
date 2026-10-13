@@ -108,6 +108,19 @@ jobs:
       - name: Déploiement de lire-ticket
         if: steps.secrets.outputs.presents == 'true'
         run: supabase functions deploy lire-ticket --project-ref "$PROJET" --no-verify-jwt
+      - name: Contrôle de la fonction et de la clé Mistral
+        if: steps.secrets.outputs.presents == 'true'
+        run: |
+          # La clé Mistral est acceptée par Mistral.
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $MISTRAL_API_KEY" https://api.mistral.ai/v1/models)
+          echo "Mistral : HTTP $code"
+          [ "$code" = "200" ] || { echo "::error::Clé Mistral refusée (HTTP $code)."; exit 1; }
+          # La fonction répond et refuse un appel sans session.
+          sleep 10
+          reponse=$(curl -s -w '\n%{http_code}' -X POST "https://$PROJET.supabase.co/functions/v1/lire-ticket" \
+            -H 'Content-Type: application/json' -H 'Origin: https://django184.github.io' -d '{}')
+          echo "$reponse"
+          echo "$reponse" | tail -1 | grep -q '^401$' || { echo "::error::La fonction lire-ticket ne répond pas comme prévu."; exit 1; }
 
   publication:
     name: Publication GitHub Pages
