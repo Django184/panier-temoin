@@ -61,6 +61,57 @@ export async function connecter(email: string, motDePasse: string): Promise<void
 export async function deconnecter(): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) throw erreur(error);
+  oublierCarteLocale();
+}
+
+// ---------------------------------------------------------------------
+// Carte Cumulus du foyer (comptes connectés seulement)
+// ---------------------------------------------------------------------
+
+// Copie locale du code, pour afficher la carte au magasin même sans
+// réseau. Effacée à la déconnexion.
+const CLE_CARTE = 'panier-temoin:carte-cumulus';
+
+export function carteLocale(): string | null {
+  try {
+    return window.localStorage.getItem(CLE_CARTE);
+  } catch {
+    return null;
+  }
+}
+
+function garderCarteLocale(code: string | null): void {
+  try {
+    if (code) window.localStorage.setItem(CLE_CARTE, code);
+    else window.localStorage.removeItem(CLE_CARTE);
+  } catch {
+    // Stockage indisponible : la carte sera relue en ligne.
+  }
+}
+
+function oublierCarteLocale(): void {
+  garderCarteLocale(null);
+}
+
+/** Code de la carte enregistré dans la base (null s'il n'y en a pas). */
+export async function lireCarteCumulus(): Promise<string | null> {
+  const { data, error } = await supabase.from('carte_cumulus').select('code').maybeSingle();
+  if (error) throw erreur(error);
+  const code = (data as { code: string } | null)?.code ?? null;
+  garderCarteLocale(code);
+  return code;
+}
+
+export async function enregistrerCarteCumulus(code: string): Promise<void> {
+  const { error } = await supabase.from('carte_cumulus').upsert({ id: 1, code: code.trim() });
+  if (error) throw erreur(error);
+  garderCarteLocale(code.trim());
+}
+
+export async function supprimerCarteCumulus(): Promise<void> {
+  const { error } = await supabase.from('carte_cumulus').delete().eq('id', 1);
+  if (error) throw erreur(error);
+  garderCarteLocale(null);
 }
 
 // ---------------------------------------------------------------------

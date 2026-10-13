@@ -75,6 +75,25 @@ export function Accueil() {
         </div>
       )}
 
+      <div className="tuiles-acces">
+        {session ? (
+          <a className="tuile-acces tuile-sombre" href={lien('cumulus')}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="icone-tuile">
+              <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z" />
+              <path d="M14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2zM16 16h2v2h-2z" className="plein" />
+            </svg>
+            <span>Carte Cumulus</span>
+          </a>
+        ) : null}
+        <a className="tuile-acces" href={lien('courses')}>
+          <svg viewBox="0 0 24 24" aria-hidden="true" className="icone-tuile">
+            <path d="M9 6h11M9 12h11M9 18h11" />
+            <path d="m3.5 6 1 1 2-2M3.5 12l1 1 2-2M3.5 18l1 1 2-2" />
+          </svg>
+          <span>Liste de courses</span>
+        </a>
+      </div>
+
       {aVerifier > 0 ? (
         <p className="alerte-prix">
           {aVerifier === 1 ? 'Un prix inhabituel attend' : `${aVerifier} prix inhabituels attendent`} votre confirmation dans{' '}

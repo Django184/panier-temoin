@@ -40,7 +40,12 @@ export function Explorer() {
 
   return (
     <div className="ecran">
-      <h1>Explorer les prix</h1>
+      <header className="entete-ecran entete-avec-lien">
+        <h1>Explorer les prix</h1>
+        <a href={lien('paniers')} className="bouton-lien">
+          Paniers types
+        </a>
+      </header>
       <label className="champ champ-large champ-recherche">
         <span className="champ-etiquette">Produit</span>
         <input

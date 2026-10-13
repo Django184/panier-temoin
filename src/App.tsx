@@ -10,6 +10,8 @@ import { Explorer } from './ecrans/Explorer.tsx';
 import { FicheProduit } from './ecrans/FicheProduit.tsx';
 import { DetailPanier, Paniers } from './ecrans/Paniers.tsx';
 import { Profil } from './ecrans/Profil.tsx';
+import { Courses } from './ecrans/Courses.tsx';
+import { CarteCumulus } from './ecrans/CarteCumulus.tsx';
 import { BandeauMiseAJour } from './composants/BandeauMiseAJour.tsx';
 
 function Reserve({ raison, children }: { raison: string; children: ReactNode }) {
@@ -45,6 +47,14 @@ function Ecran({ chemin }: { chemin: string[] }) {
       return (
         <Reserve raison="Connectez-vous pour voir vos tickets.">
           <Profil />
+        </Reserve>
+      );
+    case 'courses':
+      return <Courses />;
+    case 'cumulus':
+      return (
+        <Reserve raison="Connectez-vous pour afficher la carte Cumulus du foyer.">
+          <CarteCumulus />
         </Reserve>
       );
     case 'import':
@@ -84,8 +94,8 @@ const ONGLETS: Array<{ cle: string; titre: string; icone: ReactNode }> = [
     ),
   },
   {
-    cle: 'paniers',
-    titre: 'Paniers',
+    cle: 'courses',
+    titre: 'Courses',
     icone: (
       <>
         <path d="M3 9h18l-2 11H5z" />
@@ -107,7 +117,8 @@ const ONGLETS: Array<{ cle: string; titre: string; icone: ReactNode }> = [
 
 export function App() {
   const chemin = useChemin();
-  const actif = chemin[0] === 'produit' ? 'explorer' : (chemin[0] ?? '');
+  const ONGLET_PARENT: Record<string, string> = { produit: 'explorer', paniers: 'explorer', cumulus: 'courses' };
+  const actif = ONGLET_PARENT[chemin[0] ?? ''] ?? chemin[0] ?? '';
 
   return (
     <>

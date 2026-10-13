@@ -98,6 +98,11 @@ function reponseSimulee(url, entetes) {
     if (url.includes('numero_filiale')) return objet ? MAGASIN : [MAGASIN];
     return MAGASINS;
   }
+  if (chemin.endsWith('/rest/v1/carte_cumulus')) {
+    // Code fictif : jamais la vraie carte dans les captures.
+    const carte = { code: 'CARTE-FICTIVE-0000-DEMO-ABCDEFGHIJKLMNOP==' };
+    return objet ? carte : [carte];
+  }
   if (chemin.endsWith('/rest/v1/favoris')) {
     return [{ produits: { id: 'p1', nom: 'Agnesi Linguine N.10', vendu_au_poids: false } }];
   }
@@ -177,6 +182,24 @@ await capturer('05-verification-ligne-ouverte', {
     await page.locator('.ligne-a-verifier .ligne-rangee').first().click();
   },
 });
+// Lien « Ajouter à ma liste de courses » tel que Chef Feta l'écrit.
+const LIEN_COURSES = '#/courses/' + JSON.stringify({
+  r: 'Poulet sauté façon teriyaki',
+  i: [
+    ['Légumes', '250 g de champignons de Paris'], ['Légumes', '2 carottes moyennes'], ['Légumes', '1 oignon rouge'],
+    ['Viandes et poissons', '700 g de blancs de poulet'], ['Fruits secs', '1 cas de graines de sésame (optionnel)'],
+    ['Bocaux', '3 cas de miel (?)'], ['Pâtes', '300 g de riz basmati'], ['Produits asiatiques et Tex-Mex', '6 cas de sauce soja'],
+    ['Placard — à vérifier', "1 cas d'huile neutre"],
+  ],
+}).replaceAll(' ', '%20').replaceAll('(', '%28').replaceAll(')', '%29');
+const cocherDeux = async (page) => {
+  const cases = page.locator('.article-courses input');
+  await cases.nth(0).check();
+  await cases.nth(3).check();
+};
+await capturer('10-courses', { chemin: LIEN_COURSES.slice(2), action: cocherDeux });
+await capturer('11-carte-cumulus', { chemin: 'cumulus' });
+await capturer('12-courses-sombre', { theme: 'dark', chemin: LIEN_COURSES.slice(2), action: cocherDeux });
 await capturer('06-explorer', {
   chemin: 'explorer',
   action: async (page) => {

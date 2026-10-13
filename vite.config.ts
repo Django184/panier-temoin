@@ -24,6 +24,21 @@ export default defineConfig({
         orientation: 'portrait',
         background_color: '#F7F8F6',
         theme_color: '#1F2A3A',
+        // Appui long sur l'icône (Android) : accès direct à la caisse.
+        shortcuts: [
+          {
+            name: 'Carte Cumulus',
+            short_name: 'Cumulus',
+            url: `${BASE}#/cumulus`,
+            icons: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+          {
+            name: 'Liste de courses',
+            short_name: 'Courses',
+            url: `${BASE}#/courses`,
+            icons: [{ src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
         icons: [
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },

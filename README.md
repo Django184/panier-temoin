@@ -53,8 +53,8 @@ Ces étapes ont déjà été faites pour ce dépôt ; elles servent à tout réi
 ### 1. Supabase
 
 1. Créer un projet sur [supabase.com](https://supabase.com), plan gratuit, région **Central Europe (Zurich)**. Le choix « Europe » général ne garantit pas la Suisse.
-2. Dans l’**éditeur SQL**, exécuter dans l’ordre, une seule fois chacun, les quatre fichiers de `supabase/migrations/`.
-3. Exécuter `supabase/tests/tests_backend.sql`. Résultat attendu : une ligne « Tous les tests sont passés (56 vérifications) ». La base n’est pas modifiée.
+2. Dans l’**éditeur SQL**, exécuter dans l’ordre, une seule fois chacun, les cinq fichiers de `supabase/migrations/`.
+3. Exécuter `supabase/tests/tests_backend.sql`. Résultat attendu : une ligne « Tous les tests sont passés (58 vérifications) ». La base n’est pas modifiée.
 4. Dans **Authentication** : désactiver l’inscription de nouveaux utilisateurs, puis créer les comptes (**Users → Add user → Create new user**, avec « Auto Confirm User »).
 5. Dans **Project Settings → API keys**, relever l’URL du projet et la clé « publishable », puis les reporter dans `src/config.ts` et dans `.github/workflows/maintien-supabase.yml`. Ne jamais utiliser la clé secrète dans l’app.
 

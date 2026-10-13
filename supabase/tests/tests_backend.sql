@@ -547,6 +547,36 @@ exception when raise_exception then
 end $$;
 
 -- =====================================================================
+-- 12. Carte Cumulus partagée : comptes connectés seulement
+-- =====================================================================
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', current_setting('test.compte_a'), true);
+insert into public.carte_cumulus (code) values ('CODE-DE-TEST-123')
+on conflict (id) do update set code = excluded.code;
+
+select set_config('request.jwt.claims', current_setting('test.compte_b'), true);
+do $$
+begin
+  perform pg_temp.verifier((select code from public.carte_cumulus) = 'CODE-DE-TEST-123',
+    'B lit la carte Cumulus enregistrée par A');
+end $$;
+
+reset role;
+set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+do $$
+begin
+  perform 1 from public.carte_cumulus;
+  raise exception 'ÉCHEC : un visiteur sans compte lit la carte Cumulus';
+exception when insufficient_privilege then
+  raise notice 'OK : la carte Cumulus est invisible sans compte';
+end $$;
+
+reset role;
+set local role authenticated;
+
+-- =====================================================================
 -- 11. Suppression d'un ticket par son auteur
 -- =====================================================================
 select set_config('request.jwt.claims', current_setting('test.compte_a'), true);
@@ -565,4 +595,4 @@ end $$;
 rollback;
 
 -- Atteint seulement si aucune vérification n'a échoué.
-select 'Tous les tests sont passés (56 vérifications)' as resultat;
+select 'Tous les tests sont passés (58 vérifications)' as resultat;

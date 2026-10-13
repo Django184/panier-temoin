@@ -6,7 +6,12 @@
 import { ErreurImport, lireReponseClaude } from '../lib/importClaude.ts';
 import { enregistrerBrouillon } from '../stockageLocal.ts';
 
-const CLE_PROJET = 'panier-temoin:projet-claude';
+// Deux projets Claude : la lecture des tickets et Chef Feta (recettes).
+export type QuelProjet = 'tickets' | 'recettes';
+const CLES_PROJET: Record<QuelProjet, string> = {
+  tickets: 'panier-temoin:projet-claude',
+  recettes: 'panier-temoin:projet-chef-feta',
+};
 const CLE_RETOUR = 'panier-temoin:retour-claude';
 
 /** Adresse d'un projet Claude (« https://claude.ai/project/… »). */
@@ -15,9 +20,9 @@ export const MOTIF_PROJET = /^https:\/\/claude\.ai\/project\/[0-9a-zA-Z-]+\/?$/;
 /** Page de création des projets, si aucun projet n'est encore enregistré. */
 export const ADRESSE_PROJETS = 'https://claude.ai/projects';
 
-export function lireProjet(): string | null {
+export function lireProjet(quel: QuelProjet = 'tickets'): string | null {
   try {
-    const adresse = window.localStorage.getItem(CLE_PROJET);
+    const adresse = window.localStorage.getItem(CLES_PROJET[quel]);
     return adresse && MOTIF_PROJET.test(adresse) ? adresse : null;
   } catch {
     return null;
@@ -25,20 +30,20 @@ export function lireProjet(): string | null {
 }
 
 /** Enregistre l'adresse du projet ; renvoie l'adresse nettoyée ou null si elle est invalide. */
-export function enregistrerProjet(saisie: string): string | null {
+export function enregistrerProjet(saisie: string, quel: QuelProjet = 'tickets'): string | null {
   const trouvee = saisie.match(/https:\/\/claude\.ai\/project\/[0-9a-zA-Z-]+/);
   if (!trouvee) return null;
   try {
-    window.localStorage.setItem(CLE_PROJET, trouvee[0]);
+    window.localStorage.setItem(CLES_PROJET[quel], trouvee[0]);
   } catch {
     // Stockage indisponible : l'adresse sera redemandée.
   }
   return trouvee[0];
 }
 
-export function oublierProjet(): void {
+export function oublierProjet(quel: QuelProjet = 'tickets'): void {
   try {
-    window.localStorage.removeItem(CLE_PROJET);
+    window.localStorage.removeItem(CLES_PROJET[quel]);
   } catch {
     // Rien à faire.
   }

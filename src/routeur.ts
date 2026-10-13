@@ -10,7 +10,13 @@ function segmentsActuels(): string[] {
     .split('?')[0]
     .split('/')
     .filter((s) => s.length > 0)
-    .map((s) => decodeURIComponent(s));
+    .map((s) => {
+      try {
+        return decodeURIComponent(s);
+      } catch {
+        return s; // « % » isolé dans un lien envoyé par Claude
+      }
+    });
 }
 
 /** Segments du chemin courant : « #/produit/abc » → ['produit', 'abc']. */

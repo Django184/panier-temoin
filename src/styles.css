@@ -1223,3 +1223,245 @@ mark.exemple-douteux {
     transform: none;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Accès rapides (accueil, liste de courses)
+   --------------------------------------------------------------------- */
+
+.tuiles-acces {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.tuile-acces {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.6rem;
+  min-height: 92px;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: var(--rayon);
+  background: var(--surface);
+  color: var(--encre);
+  font: inherit;
+  font-weight: 650;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.tuile-sombre {
+  background: var(--encre);
+  border-color: var(--encre);
+  color: var(--papier);
+}
+
+.tuile-acces:active {
+  transform: translateY(1px);
+}
+
+.icone-tuile {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icone-tuile .plein {
+  fill: currentColor;
+  stroke: none;
+}
+
+.entete-avec-lien {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.message-ok {
+  color: var(--vert);
+  font-weight: 650;
+}
+
+.centre {
+  text-align: center;
+}
+
+/* ---------------------------------------------------------------------
+   Carte Cumulus
+   --------------------------------------------------------------------- */
+
+.carte-qr {
+  margin: 0 auto;
+  max-width: 340px;
+  padding: 1.25rem 1.25rem 0.75rem;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08), 0 10px 30px rgb(0 0 0 / 0.12);
+}
+
+.code-qr {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.carte-qr-legende {
+  margin: 0.4rem 0 0;
+  text-align: center;
+  color: #e65100;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* ---------------------------------------------------------------------
+   Liste de courses
+   --------------------------------------------------------------------- */
+
+.bloc-collage > * + * {
+  margin-top: 0.75rem;
+}
+
+.liste-courses {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.rayon ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--rayon);
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  overflow: hidden;
+}
+
+.rayon li + li {
+  border-top: 1px solid var(--trait);
+}
+
+.rayon-titre {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--encre-2);
+}
+
+.rayon-compte {
+  min-width: 1.5rem;
+  padding: 0 0.4rem;
+  border-radius: 999px;
+  background: var(--stylo-fond);
+  color: var(--stylo);
+  text-align: center;
+  letter-spacing: 0;
+}
+
+.article-courses {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  min-height: 52px;
+  padding: 0.55rem 0.9rem;
+  cursor: pointer;
+}
+
+.article-courses input {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--vert);
+}
+
+.article-texte {
+  display: flex;
+  flex-direction: column;
+  font-size: 1.02rem;
+}
+
+.article-recette {
+  font-size: 0.75rem;
+  color: var(--encre-2);
+}
+
+.article-pris .article-texte {
+  color: var(--encre-2);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.ajout-article {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem;
+}
+
+.ajout-article input,
+.ajout-article select {
+  min-height: 48px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--encre);
+  font: inherit;
+}
+
+.ajout-article input {
+  grid-column: 1 / -1;
+}
+
+.puces-recettes {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.puces-recettes li {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding-left: 0.8rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.puces-recettes li span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.puces-recettes .bouton-icone {
+  width: 36px;
+  height: 36px;
+  font-size: 1.1rem;
+}
+
+.reglages > summary {
+  font-weight: 650;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.reglages[open] > summary {
+  margin-bottom: 0.75rem;
+}
