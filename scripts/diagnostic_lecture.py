@@ -77,9 +77,9 @@ def appeler(modele: str, image: str) -> None:
         statut, entetes, texte = erreur.code, erreur.headers, erreur.read().decode()
     duree = time.time() - debut
     limites = {k: v for k, v in entetes.items() if "ratelimit" in k.lower() or k.lower() == "retry-after"}
-    print(f"\n=== {modele} : HTTP {statut} en {duree:.1f} s")
-    print(f"limites : {limites}")
-    print(texte[:600])
+    resume = f"{modele} : HTTP {statut} en {duree:.1f} s ; limites {limites} ; {texte[:400]}"
+    # En annotation, pour être lisible sans ouvrir les journaux.
+    print("::notice::" + resume.replace("\n", " ").replace("%", "%25"))
 
 
 def main() -> None:
