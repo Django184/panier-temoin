@@ -1,0 +1,94 @@
+# Tests, build et publication sur GitHub Pages.
+#
+# À chaque envoi sur « main » :
+#   1. backend : migrations, tests SQL et démonstration sur un Postgres 16 ;
+#   2. app : tests du lecteur de ticket, vérification des types, build ;
+#   3. publication de l'app sur https://django184.github.io/panier-temoin/
+# La publication n'a lieu que si les deux premières étapes réussissent.
+
+name: Tests et publication
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: publication-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (Postgres 16)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - name: Migrations, tests et démonstration
+        run: |
+          for fichier in \
+            supabase/tests/local/supabase_minimal.sql \
+            supabase/migrations/*.sql \
+            supabase/tests/tests_backend.sql \
+            supabase/demo/donnees_demo.sql \
+            supabase/demo/verifier_demo.sql \
+            supabase/demo/purge_demo.sql
+          do
+            echo "→ $fichier"
+            psql -X -q -v ON_ERROR_STOP=1 -o /dev/null -f "$fichier"
+          done
+
+  app:
+    name: App (tests, types, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installation des dépendances
+        run: npm install --no-audit --no-fund
+      - name: Tests du lecteur de ticket
+        run: npm test
+      - name: Vérification des types et build
+        run: npm run build
+      - name: Préparation de la publication
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  publication:
+    name: Publication GitHub Pages
+    if: github.ref == 'refs/heads/main'
+    needs: [backend, app]
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4

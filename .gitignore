@@ -1,0 +1,20 @@
+# Dépendances et builds
+node_modules/
+dist/
+dev-dist/
+
+# Moteur OCR copié depuis node_modules par scripts/copier-ocr.mjs
+public/ocr/
+
+# Variables d'environnement locales
+.env
+.env.*
+!.env.example
+
+# Supabase CLI (facultative)
+supabase/.temp/
+supabase/.branches/
+
+# Systèmes
+.DS_Store
+Thumbs.db

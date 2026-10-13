@@ -1,0 +1,829 @@
+/* =====================================================================
+   Panier Témoin — feuille de style
+   Idée directrice : un ticket qu'on annote. Ce que le ticket imprime est
+   à l'encre ; ce que l'utilisateur corrige est au stylo bleu ; ce qui
+   reste à vérifier est surligné en ambre.
+   ===================================================================== */
+
+:root {
+  --papier: #f7f8f6;
+  --surface: #ffffff;
+  --encre: #1f2a3a;
+  --encre-2: #5b6575;
+  --trait: #dce0e5;
+  --stylo: #2b48c9;
+  --stylo-fond: #e8ecfb;
+  --surligneur: #f6e3b8;
+  --ambre: #b7791f;
+  --vert: #1e7a4e;
+  --rouge: #b3362c;
+
+  --texte: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --chiffres: ui-monospace, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --rayon: 10px;
+  --onglets: 64px;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --papier: #14181e;
+    --surface: #1b2028;
+    --encre: #e6e9ee;
+    --encre-2: #a3abb8;
+    --trait: #2e3540;
+    --stylo: #6f86f0;
+    --stylo-fond: #212a48;
+    --surligneur: #4a3a16;
+    --ambre: #b98526;
+    --vert: #4cb582;
+    --rouge: #e0675c;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--papier);
+  color: var(--encre);
+  font: 16px/1.5 var(--texte);
+  min-height: 100dvh;
+}
+
+a {
+  color: var(--stylo);
+}
+
+h1,
+h2 {
+  line-height: 1.2;
+  margin: 0 0 0.5rem;
+}
+
+h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+p {
+  margin: 0 0 0.75rem;
+}
+
+:focus-visible {
+  outline: 2px solid var(--stylo);
+  outline-offset: 2px;
+}
+
+.discret {
+  color: var(--encre-2);
+  font-size: 0.9rem;
+}
+
+.chiffre {
+  font-family: var(--chiffres);
+  font-variant-numeric: tabular-nums;
+}
+
+.vide {
+  color: var(--encre-2);
+  padding: 1rem 0;
+}
+
+.erreur {
+  color: var(--rouge);
+  font-weight: 550;
+}
+
+.invisible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------------
+   Cadre
+   --------------------------------------------------------------------- */
+
+.contenu {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(1rem + env(safe-area-inset-top)) 1rem calc(var(--onglets) + 2rem + env(safe-area-inset-bottom));
+}
+
+.ecran > * + * {
+  margin-top: 1rem;
+}
+
+.ecran-etroit {
+  max-width: 420px;
+}
+
+.entete-ecran {
+  margin-bottom: 0.5rem;
+}
+
+.bloc {
+  border-top: 1px solid var(--trait);
+  padding-top: 1rem;
+}
+
+/* Barre d'onglets */
+.onglets {
+  position: fixed;
+  inset: auto 0 0 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: var(--surface);
+  border-top: 1px solid var(--trait);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+
+.onglet {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--onglets);
+  color: var(--encre-2);
+  text-decoration: none;
+  font-size: 0.75rem;
+}
+
+.onglet-icone {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.onglet.actif {
+  color: var(--encre);
+  font-weight: 650;
+}
+
+.onglet-ajouter .onglet-icone {
+  stroke: var(--stylo);
+}
+
+.onglet-ajouter.actif {
+  color: var(--stylo);
+}
+
+/* ---------------------------------------------------------------------
+   Boutons
+   --------------------------------------------------------------------- */
+
+.bouton-principal,
+.bouton-secondaire {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.6rem 1.1rem;
+  border-radius: var(--rayon);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.bouton-principal {
+  background: var(--encre);
+  color: var(--papier);
+  border: 1px solid var(--encre);
+}
+
+.bouton-secondaire {
+  background: transparent;
+  color: var(--encre);
+  border: 1px solid var(--trait);
+}
+
+.bouton-principal:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bouton-grand {
+  width: 100%;
+  min-height: 56px;
+  font-size: 1.05rem;
+}
+
+.bouton-lien {
+  background: none;
+  border: none;
+  padding: 0.25rem 0;
+  color: var(--stylo);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.bouton-danger {
+  color: var(--rouge);
+}
+
+.bouton-icone {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border: none;
+  background: none;
+  color: var(--encre-2);
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.bouton-favori {
+  border: 1px solid var(--trait);
+  background: none;
+  color: var(--encre);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bouton-favori.actif {
+  border-color: var(--ambre);
+  color: var(--ambre);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.actions-colonne {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.choix-capture {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* ---------------------------------------------------------------------
+   Champs
+   --------------------------------------------------------------------- */
+
+.champ {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.champ-etiquette {
+  font-size: 0.8rem;
+  color: var(--encre-2);
+}
+
+.champ input,
+.champ select,
+.champ textarea,
+.filtres select {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--trait);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--encre);
+  font: inherit;
+}
+
+.champ textarea {
+  font-family: var(--chiffres);
+  font-size: 0.85rem;
+}
+
+.champ-chiffre input {
+  font-family: var(--chiffres);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.champ-large {
+  grid-column: 1 / -1;
+}
+
+.champ-etroit {
+  width: 6rem;
+}
+
+/* À vérifier : surligneur */
+.est-douteux input,
+.est-douteux select,
+.interrupteur.est-douteux,
+mark.exemple-douteux {
+  background: var(--surligneur);
+  border-color: var(--ambre);
+}
+
+mark.exemple-douteux {
+  color: inherit;
+  padding: 0 0.2em;
+  border-radius: 3px;
+}
+
+/* Corrigé à la main : stylo bleu */
+.est-corrige input,
+.exemple-corrige {
+  color: var(--stylo);
+  font-weight: 650;
+}
+
+.est-corrige input {
+  background: var(--stylo-fond);
+  border-color: var(--stylo);
+}
+
+.grille-champs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.75rem;
+}
+
+.bloc-douteux {
+  padding: 0.5rem;
+  border-radius: var(--rayon);
+  background: color-mix(in srgb, var(--surligneur) 50%, transparent);
+}
+
+.case {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  min-height: 44px;
+}
+
+.segments,
+.ligne-unite {
+  display: inline-flex;
+  border: 1px solid var(--trait);
+  border-radius: 999px;
+  padding: 2px;
+}
+
+.interrupteur {
+  border: none;
+  background: none;
+  color: var(--encre-2);
+  font: inherit;
+  font-size: 0.9rem;
+  min-height: 36px;
+  padding: 0 0.9rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.interrupteur.actif {
+  background: var(--encre);
+  color: var(--papier);
+}
+
+/* ---------------------------------------------------------------------
+   Validation : le ticket, perforé en haut et en bas
+   --------------------------------------------------------------------- */
+
+.ticket-papier {
+  background: var(--surface);
+  padding: 1.25rem 1rem;
+  margin-inline: -0.25rem;
+  --dent: 8px;
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--dent)) 51% repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--dent)) 51% repeat-x;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--dent)) 51% repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--dent)) 51% repeat-x;
+}
+
+.lignes {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+}
+
+.ligne {
+  padding: 0.9rem 0;
+  border-bottom: 1px dashed var(--trait);
+  display: grid;
+  gap: 0.6rem;
+}
+
+.ligne-fausse {
+  border-left: 3px solid var(--ambre);
+  padding-left: 0.6rem;
+}
+
+.ligne-tete {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.ligne-numero {
+  font-family: var(--chiffres);
+  color: var(--encre-2);
+  min-width: 1.5rem;
+  padding-bottom: 0.6rem;
+}
+
+.ligne-tete .champ {
+  flex: 1;
+}
+
+.ligne-chiffres {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.ligne-message {
+  color: var(--ambre);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.produit-choisi {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+}
+
+.produit-choix {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.suggestion {
+  border: 1px solid var(--stylo);
+  color: var(--stylo);
+  background: none;
+  border-radius: 999px;
+  padding: 0.35rem 0.8rem;
+  font: inherit;
+  font-size: 0.9rem;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.alerte-prix {
+  border-left: 3px solid var(--ambre);
+  background: color-mix(in srgb, var(--surligneur) 45%, transparent);
+  padding: 0.6rem 0.75rem;
+  border-radius: 0 var(--rayon) var(--rayon) 0;
+}
+
+.alerte-prix p {
+  margin: 0;
+}
+
+.totaux {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid var(--encre);
+}
+
+.somme {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.somme-juste .chiffre {
+  color: var(--vert);
+}
+
+.somme-fausse {
+  color: var(--ambre);
+}
+
+.pied-validation {
+  position: sticky;
+  bottom: calc(var(--onglets) + env(safe-area-inset-bottom));
+  background: var(--papier);
+  border-top: 1px solid var(--trait);
+  padding: 0.75rem 0;
+  margin-top: 1rem;
+}
+
+.problemes {
+  margin: 0 0 0.5rem;
+  padding-left: 1.1rem;
+  color: var(--ambre);
+  font-size: 0.9rem;
+}
+
+.pret {
+  color: var(--vert);
+  font-weight: 600;
+}
+
+.magasin-connu {
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------------
+   Listes
+   --------------------------------------------------------------------- */
+
+.liste-produits,
+.liste-simple,
+.articles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ligne-produit {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--trait);
+  color: inherit;
+  text-decoration: none;
+}
+
+.ligne-produit-nom {
+  font-weight: 550;
+}
+
+.ligne-produit-prix {
+  text-align: right;
+}
+
+.liste-simple li,
+.article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--trait);
+}
+
+.article a {
+  flex: 1;
+}
+
+.conseils,
+.etapes {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.conseils li + li,
+.etapes li + li {
+  margin-top: 0.4rem;
+}
+
+.consigne {
+  white-space: pre-wrap;
+  font-family: var(--chiffres);
+  font-size: 0.8rem;
+  background: var(--surface);
+  padding: 0.75rem;
+  border-radius: var(--rayon);
+}
+
+progress {
+  width: 100%;
+  height: 8px;
+  accent-color: var(--stylo);
+}
+
+/* ---------------------------------------------------------------------
+   Statistiques
+   --------------------------------------------------------------------- */
+
+.filtres {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.filtres select {
+  width: auto;
+  flex: 1 1 10rem;
+}
+
+.chiffre-cle {
+  font-size: 1.8rem;
+  font-weight: 650;
+  margin: 0.25rem 0;
+}
+
+.chiffre-cle .discret {
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.graphique {
+  margin: 0;
+}
+
+.graphique-conteneur {
+  position: relative;
+  width: 100%;
+}
+
+.bulle-graphique {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 1;
+  background: var(--surface);
+  border: 1px solid var(--trait);
+  border-radius: 6px;
+  padding: 0.15rem 0.5rem;
+  font-family: var(--chiffres);
+  font-size: 0.8rem;
+}
+
+.graphique-valeurs summary {
+  color: var(--encre-2);
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.graphique-valeurs table {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.graphique-valeurs td {
+  padding: 0.15rem 1rem 0.15rem 0;
+  border-bottom: 1px solid var(--trait);
+}
+
+.comparaison-liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.comparaison-ligne {
+  display: grid;
+  grid-template-columns: minmax(0, 9rem) 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.5rem 0;
+}
+
+.comparaison-nom {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+.comparaison-nom .discret {
+  font-size: 0.75rem;
+}
+
+.comparaison-piste {
+  position: relative;
+  height: 2px;
+  background: var(--trait);
+}
+
+.comparaison-point {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--stylo);
+  box-shadow: 0 0 0 2px var(--surface);
+  transform: translate(-50%, -50%);
+}
+
+.comparaison-valeur {
+  text-align: right;
+  min-width: 4rem;
+}
+
+.comparaison-echelle {
+  font-size: 0.8rem;
+}
+
+.tuiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+}
+
+.tuile dt {
+  font-size: 0.8rem;
+  color: var(--encre-2);
+}
+
+.tuile dd {
+  margin: 0;
+}
+
+.tuile dd.chiffre {
+  font-size: 1.4rem;
+  font-weight: 650;
+}
+
+/* ---------------------------------------------------------------------
+   Accueil et bandeau
+   --------------------------------------------------------------------- */
+
+.entete-accueil h1 {
+  font-size: 2.2rem;
+  letter-spacing: -0.02em;
+}
+
+.entete-accueil p {
+  max-width: 34em;
+  color: var(--encre-2);
+}
+
+.mention {
+  margin-top: 2rem;
+  font-size: 0.8rem;
+}
+
+.bandeau {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: var(--stylo-fond);
+  border-bottom: 1px solid var(--stylo);
+}
+
+.entete-produit .actions {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 380px) {
+  .ligne-chiffres {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .comparaison-ligne {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .comparaison-piste {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+  }
+}

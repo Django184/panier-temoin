@@ -1,0 +1,36 @@
+{
+  "name": "panier-temoin",
+  "private": true,
+  "version": "0.4.0",
+  "description": "Suivi participatif des prix de supermarché à partir de tickets de caisse. Projet indépendant, sans lien avec Migros.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "ocr": "node scripts/copier-ocr.mjs",
+    "dev": "npm run ocr && vite",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test src/lib/lecteur.test.ts",
+    "build": "npm run ocr && npm run typecheck && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.117.3",
+    "@tesseract.js-data/fra": "1.0.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tesseract.js": "7.0.0",
+    "uplot": "1.6.32"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vite-plugin-pwa": "2.0.0",
+    "workbox-build": "^7.4.1",
+    "workbox-window": "^7.4.1"
+  }
+}

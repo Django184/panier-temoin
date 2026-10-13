@@ -1,0 +1,30 @@
+# Maintien du projet Supabase gratuit.
+# Un projet du plan gratuit est mis en pause après une semaine sans
+# activité. Cette tâche l'interroge deux fois par semaine, avec la clé
+# publique de l'app (lecture de la liste des magasins).
+#
+# Attention : GitHub désactive les tâches planifiées d'un dépôt sans
+# activité depuis 60 jours. Il envoie alors un e-mail ; il suffit de
+# réactiver la tâche dans l'onglet « Actions ».
+
+name: Maintien Supabase
+
+on:
+  schedule:
+    - cron: '17 6 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Interroger la base
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            "https://tpovnthrvlajmyjrfltn.supabase.co/rest/v1/magasins?select=id&limit=1" \
+            -H "apikey: sb_publishable_PstYw1ciAo1ubEygjMRDsA__EsKrFyS")
+          echo "Réponse de Supabase : HTTP $code"
+          test "$code" = "200"
