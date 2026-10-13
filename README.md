@@ -48,6 +48,19 @@ GitHub : Pages sert l'app ; Actions teste, construit, publie et maintient Supaba
 | `src/lib/courses.ts` | Liste de courses : lecture des recettes de Chef Feta, parcours du magasin |
 | `docs/checklist-telephone.md` | Tests à faire sur iPhone et Android |
 
+## Écrans
+
+| Onglet | Rôle |
+| --- | --- |
+| Courses | Liste de courses rangée selon le parcours du magasin, à cocher. Bouton Chef Feta, historique des recettes, mode « Modifier ». |
+| Recette | Affiché quand une recette est dans la liste : ingrédients, étapes, astuces, portions ; modification à la main, puis adaptation de la liste. |
+| Carte | Carte Cumulus du foyer : code Aztec (comme Google Wallet) ou code-barres, d’un balayage. |
+| Ticket | Bouton « Photographier le ticket » (projet Claude), puis vérification et envoi. |
+| Prix | Recherche, favoris, derniers achats avec l’écart depuis l’achat précédent ; fiches produit et paniers types. |
+| Réglages | Aides activables, projets Claude, prix à confirmer, tickets envoyés, installation, confidentialité, compte. |
+
+Liste de courses, recettes et préférences restent sur le téléphone ; tickets, prix et carte Cumulus sont dans Supabase.
+
 ## Mise en place pas à pas
 
 Ces étapes ont déjà été faites pour ce dépôt ; elles servent à tout réinstaller.

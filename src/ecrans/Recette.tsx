@@ -204,7 +204,7 @@ function EditionRecette({ recette, onFin }: { recette: TypeRecette; onFin: () =>
       </label>
       <div className="grille-deux">
         <label className="champ">
-          <span className="champ-etiquette">Personnes (base des quantités)</span>
+          <span className="champ-etiquette">Personnes</span>
           <input
             type="number"
             inputMode="numeric"
@@ -223,7 +223,7 @@ function EditionRecette({ recette, onFin }: { recette: TypeRecette; onFin: () =>
       <fieldset className="groupe-edition">
         <legend>Ingrédients</legend>
         {brouillon.ingredients.map((ing, i) => (
-          <div key={i} className="ligne-edition">
+          <div key={i} className="ligne-edition ligne-edition-ingredient">
             <input value={ing.texte} aria-label={`Ingrédient ${i + 1}`} onChange={(e) => majIngredient(i, { texte: e.target.value })} />
             <select value={rayonDuParcours(ing.rayon)} aria-label={`Rayon de l’ingrédient ${i + 1}`} onChange={(e) => majIngredient(i, { rayon: e.target.value })}>
               {PARCOURS.map((r) => (

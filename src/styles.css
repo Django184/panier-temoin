@@ -1576,6 +1576,9 @@ mark.exemple-douteux {
 
 .actions-courses > * {
   flex: 1;
+  min-width: 0;
+  padding-inline: 0.75rem;
+  white-space: nowrap;
 }
 
 .historique {
@@ -1863,6 +1866,28 @@ mark.exemple-douteux {
 
 .ligne-edition + .ligne-edition {
   margin-top: 0.45rem;
+}
+
+.ligne-edition-ingredient {
+  grid-template-columns: 1fr auto;
+  row-gap: 0.25rem;
+}
+
+.ligne-edition-ingredient select {
+  grid-column: 1;
+  grid-row: 2;
+  min-height: 34px;
+  padding-block: 0.2rem;
+  color: var(--encre-2);
+}
+
+.ligne-edition-ingredient .bouton-icone {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
+.ligne-edition-ingredient + .ligne-edition-ingredient {
+  margin-top: 0.75rem;
 }
 
 .ligne-edition-texte {
