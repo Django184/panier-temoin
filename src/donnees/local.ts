@@ -26,24 +26,40 @@ function ecrire(cle: string, valeur: unknown): void {
 
 interface Magasin<T> {
   lire: () => T;
+  /** Changement fait sur ce téléphone (signalé à la synchronisation). */
   modifier: (maj: (v: T) => T) => void;
+  /** Version reçue de la base : remplace la copie locale sans être renvoyée. */
+  remplacer: (v: T) => void;
+  /** Être prévenu des changements faits sur ce téléphone. */
+  observer: (f: (avant: T, apres: T) => void) => () => void;
   utiliser: () => T;
 }
 
-function creerMagasin<T>(cle: string, defaut: T, valider: (v: unknown) => T = (v) => v as T): Magasin<T> {
-  let valeur = valider(lire<unknown>(cle, defaut));
+function creerMagasin<T>(cle: string | null, defaut: T, valider: (v: unknown) => T = (v) => v as T): Magasin<T> {
+  let valeur = cle ? valider(lire<unknown>(cle, defaut)) : defaut;
   const ecouteurs = new Set<() => void>();
+  const observateurs = new Set<(avant: T, apres: T) => void>();
   const abonner = (f: () => void) => {
     ecouteurs.add(f);
     return () => ecouteurs.delete(f);
   };
   const lireValeur = () => valeur;
+  const changer = (nouvelle: T) => {
+    valeur = nouvelle;
+    if (cle) ecrire(cle, valeur);
+    ecouteurs.forEach((f) => f());
+  };
   return {
     lire: lireValeur,
     modifier: (maj) => {
-      valeur = maj(valeur);
-      ecrire(cle, valeur);
-      ecouteurs.forEach((f) => f());
+      const avant = valeur;
+      changer(maj(valeur));
+      if (avant !== valeur) observateurs.forEach((f) => f(avant, valeur));
+    },
+    remplacer: changer,
+    observer: (f) => {
+      observateurs.add(f);
+      return () => observateurs.delete(f);
     },
     utiliser: () => useSyncExternalStore(abonner, lireValeur, lireValeur),
   };
@@ -87,11 +103,19 @@ export function marquerAideVue(cle: string): void {
   preferences.modifier((p) => (p.aidesVues.includes(cle) ? p : { ...p, aidesVues: [...p.aidesVues, cle] }));
 }
 
+/** Identifiant UUID v4 (format attendu par la base). */
 export function nouvelId(): string {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
+  const o = crypto.getRandomValues(new Uint8Array(16));
+  o[6] = (o[6] & 0x0f) | 0x40;
+  o[8] = (o[8] & 0x3f) | 0x80;
+  const h = [...o].map((x) => x.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
+
+/** État de la synchronisation avec la base (non gardé). */
+export type EtatSynchro = 'local' | 'a_jour' | 'envoi' | 'hors_ligne' | 'erreur';
+export const etatSynchro = creerMagasin<EtatSynchro>(null, 'local');
 
 /** Recettes dont des articles sont dans la liste (onglet Recette visible). */
 export function useRecettesDeLaListe(): Recette[] {

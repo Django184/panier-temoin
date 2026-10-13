@@ -156,8 +156,29 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
     },
     [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet, aides],
   );
+  // Tables partagées simulées (liste de courses, recettes), en mémoire.
+  const tables = { courses_articles: new Map(), recettes: new Map() };
   await contexte.route(`https://${REF}.supabase.co/**`, async (route) => {
     const requete = route.request();
+    const url = new URL(requete.url());
+    const table = Object.keys(tables).find((t) => url.pathname.endsWith(`/rest/v1/${t}`));
+    if (table) {
+      const methode = requete.method();
+      if (methode === 'POST') {
+        const corps = requete.postDataJSON();
+        for (const ligne of Array.isArray(corps) ? corps : [corps]) tables[table].set(ligne.id, ligne);
+      } else if (methode === 'DELETE') {
+        const ids = (url.searchParams.get('id') ?? '').replace(/^in\.\(|\)$/g, '').split(',');
+        ids.forEach((id) => tables[table].delete(id.replaceAll('"', '')));
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify(methode === 'GET' ? [...tables[table].values()] : []),
+      });
+      return;
+    }
     const corps = reponseSimulee(requete.url(), requete.headers());
     await route.fulfill({
       status: corps === null ? 406 : 200,

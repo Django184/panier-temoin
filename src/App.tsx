@@ -17,6 +17,7 @@ import { BandeauMiseAJour } from './composants/BandeauMiseAJour.tsx';
 import { IconeCarte, IconePanier, IconeReglages, IconeTendance, IconeTicket, IconeToque } from './composants/Icones.tsx';
 import { useRecettesDeLaListe } from './donnees/local.ts';
 import { lignesAVerifier } from './api.ts';
+import { arreterSynchro, demarrerSynchro } from './donnees/synchro.ts';
 
 function Reserve({ raison, children }: { raison: string; children: ReactNode }) {
   const { session, chargement } = useSession();
@@ -87,6 +88,13 @@ export function App() {
   const [aVerifier, setAVerifier] = useState(0);
   const racine = chemin[0] ?? '';
   const actif = PARENT[racine] ?? racine;
+
+  // Liste de courses et recettes partagées par les comptes du foyer.
+  const compteId = session?.user.id ?? null;
+  useEffect(() => {
+    if (compteId) demarrerSynchro(compteId);
+    else arreterSynchro();
+  }, [compteId]);
 
   // Pastille sur Réglages quand des prix attendent une confirmation.
   useEffect(() => {

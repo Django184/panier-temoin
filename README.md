@@ -59,7 +59,7 @@ GitHub : Pages sert l'app ; Actions teste, construit, publie et maintient Supaba
 | Prix | Recherche, favoris, derniers achats avec l’écart depuis l’achat précédent ; fiches produit et paniers types. |
 | Réglages | Aides activables, projets Claude, prix à confirmer, tickets envoyés, installation, confidentialité, compte. |
 
-Liste de courses, recettes et préférences restent sur le téléphone ; tickets, prix et carte Cumulus sont dans Supabase.
+Tickets, prix, carte Cumulus, liste de courses et recettes sont dans Supabase ; la liste et les recettes sont partagées par les comptes du foyer, en direct, avec une copie sur chaque téléphone pour les courses sans réseau (`src/donnees/synchro.ts`). Les préférences d’affichage restent sur le téléphone.
 
 ## Mise en place pas à pas
 
@@ -69,7 +69,7 @@ Ces étapes ont déjà été faites pour ce dépôt ; elles servent à tout réi
 
 1. Créer un projet sur [supabase.com](https://supabase.com), plan gratuit, région **Central Europe (Zurich)**. Le choix « Europe » général ne garantit pas la Suisse.
 2. Dans l’**éditeur SQL**, exécuter dans l’ordre, une seule fois chacun, les fichiers de `supabase/migrations/`, dans l’ordre de leur nom.
-3. Exécuter `supabase/tests/tests_backend.sql`. Résultat attendu : une ligne « Tous les tests sont passés (60 vérifications) ». La base n’est pas modifiée.
+3. Exécuter `supabase/tests/tests_backend.sql`. Résultat attendu : une ligne « Tous les tests sont passés (62 vérifications) ». La base n’est pas modifiée.
 4. Dans **Authentication** : désactiver l’inscription de nouveaux utilisateurs, puis créer les comptes (**Users → Add user → Create new user**, avec « Auto Confirm User »).
 5. Dans **Project Settings → API keys**, relever l’URL du projet et la clé « publishable », puis les reporter dans `src/config.ts` et dans `.github/workflows/maintien-supabase.yml`. Ne jamais utiliser la clé secrète dans l’app.
 

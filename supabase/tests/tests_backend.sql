@@ -609,6 +609,41 @@ reset role;
 set local role authenticated;
 
 -- =====================================================================
+-- 12 ter. Liste de courses et recettes partagées par le foyer
+-- =====================================================================
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims', current_setting('test.compte_a'), true);
+insert into public.recettes (id, titre, personnes, portions, ingredients)
+values ('33333333-3333-4333-8333-333333333333', 'Recette test', 4, 4, '[{"rayon":"Légumes","texte":"2 carottes"}]');
+insert into public.courses_articles (id, texte, rayon, recette_id, recette, ingredient)
+values ('44444444-4444-4444-8444-444444444444', '2 carottes', 'Légumes', '33333333-3333-4333-8333-333333333333', 'Recette test', 0);
+
+select set_config('request.jwt.claims', current_setting('test.compte_b'), true);
+update public.courses_articles set coche = true where id = '44444444-4444-4444-8444-444444444444';
+do $$
+begin
+  perform pg_temp.verifier(
+    (select coche from public.courses_articles where id = '44444444-4444-4444-8444-444444444444')
+      and (select titre from public.recettes where id = '33333333-3333-4333-8333-333333333333') = 'Recette test',
+    'B voit et coche la liste de courses et la recette de A');
+end $$;
+
+reset role;
+set local role anon;
+select set_config('request.jwt.claims', '{"role":"anon"}', true);
+do $$
+begin
+  perform 1 from public.courses_articles;
+  raise exception 'ÉCHEC : un visiteur sans compte lit la liste de courses';
+exception when insufficient_privilege then
+  raise notice 'OK : la liste de courses est invisible sans compte';
+end $$;
+
+reset role;
+set local role authenticated;
+
+-- =====================================================================
 -- 11. Suppression d'un ticket par son auteur
 -- =====================================================================
 select set_config('request.jwt.claims', current_setting('test.compte_a'), true);
@@ -627,4 +662,4 @@ end $$;
 rollback;
 
 -- Atteint seulement si aucune vérification n'a échoué.
-select 'Tous les tests sont passés (60 vérifications)' as resultat;
+select 'Tous les tests sont passés (62 vérifications)' as resultat;

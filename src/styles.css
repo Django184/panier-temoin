@@ -2268,3 +2268,34 @@ mark.exemple-douteux {
     transition: none;
   }
 }
+
+/* État du partage de la liste */
+.etat-synchro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--encre-2);
+}
+
+.etat-synchro::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--trait-fort);
+}
+
+.etat-a_jour::before {
+  background: var(--vert);
+}
+
+.etat-envoi::before {
+  background: var(--stylo);
+}
+
+.etat-hors_ligne::before,
+.etat-erreur::before {
+  background: var(--ambre);
+}

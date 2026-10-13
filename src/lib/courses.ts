@@ -38,6 +38,17 @@ export interface ArticleCourses {
   coche: boolean;
   /** Quantité modifiée à la main : la recette ne la remplace plus. */
   manuel?: boolean;
+  /** Date d'ajout (ISO), pour un ordre identique sur tous les téléphones. */
+  creeLe?: string;
+}
+
+/** Ordre stable des articles : ajout, puis rang dans la recette. */
+export function ordreArticles(a: ArticleCourses, b: ArticleCourses): number {
+  return (
+    (a.creeLe ?? '').localeCompare(b.creeLe ?? '') ||
+    (a.ingredient ?? 0) - (b.ingredient ?? 0) ||
+    a.id.localeCompare(b.id)
+  );
 }
 
 /** Minuscules, sans accents, sans emoji ni ponctuation. */
@@ -79,11 +90,13 @@ export function majListePourRecette(liste: ArticleCourses[], recette: Recette, n
   const actuels = new Map(
     liste.filter((a) => a.recetteId === recette.id && a.ingredient !== null).map((a) => [a.ingredient as number, a]),
   );
+  const maintenant = new Date().toISOString();
   const nouveaux = articlesAttendus(recette).map((attendu): ArticleCourses => {
     const avant = actuels.get(attendu.ingredient);
     if (avant?.manuel) return { ...avant, recette: recette.titre, rayon: attendu.rayon };
     return {
       id: avant?.id ?? nouvelId(),
+      creeLe: avant?.creeLe ?? maintenant,
       texte: attendu.texte,
       rayon: attendu.rayon,
       recetteId: recette.id,
@@ -114,5 +127,7 @@ export function ecartsAvecRecette(liste: ArticleCourses[], recette: Recette): nu
 
 /** Articles regroupés par rayon, dans l'ordre du parcours. */
 export function parRayon(liste: ArticleCourses[]): Array<{ rayon: string; articles: ArticleCourses[] }> {
-  return PARCOURS.map((rayon) => ({ rayon, articles: liste.filter((a) => a.rayon === rayon) })).filter((g) => g.articles.length > 0);
+  return PARCOURS.map((rayon) => ({ rayon, articles: liste.filter((a) => a.rayon === rayon).sort(ordreArticles) })).filter(
+    (g) => g.articles.length > 0,
+  );
 }

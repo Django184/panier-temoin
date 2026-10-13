@@ -174,8 +174,9 @@ export function Reglages() {
               n’est visible que par les comptes connectés et n’est jamais liée aux tickets.
             </li>
             <li>
-              Les données sont hébergées en Suisse (Supabase, région Zurich). Liste de courses et recettes restent sur ce
-              téléphone. Les statistiques publiques ne montrent aucun contributeur.
+              Les données sont hébergées en Suisse (Supabase, région Zurich). Liste de courses et recettes sont partagées
+              entre les comptes du foyer, avec une copie sur chaque téléphone pour les courses sans réseau. Les statistiques
+              publiques ne montrent aucun contributeur.
             </li>
           </ul>
         </Repli>

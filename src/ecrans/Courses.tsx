@@ -4,13 +4,34 @@
 
 import { useEffect, useState } from 'react';
 import { PARCOURS, RAYON_AUTRES, parRayon } from '../lib/courses.ts';
-import { liste, nouvelId, recettes } from '../donnees/local.ts';
+import { etatSynchro, liste, nouvelId, recettes, type EtatSynchro } from '../donnees/local.ts';
+import { useSession } from '../session.tsx';
 import { chargerRecette, prendreMessageCourses, type MessageCourses } from '../lecture/chefFeta.ts';
 import { lireProjet } from '../lecture/claude.ts';
 import { Aide } from '../composants/Aide.tsx';
 import { ConfigurationChefFeta } from '../composants/ConfigurationChefFeta.tsx';
 import { IconeCrayon, IconeExterne, IconeHorloge, IconeToque } from '../composants/Icones.tsx';
 import { dateSuisse } from '../composants/Champs.tsx';
+
+const ETATS: Record<EtatSynchro, string> = {
+  local: 'Sur ce téléphone',
+  a_jour: 'Partagée avec le foyer',
+  envoi: 'Envoi…',
+  hors_ligne: 'Hors ligne : envoi au retour du réseau',
+  erreur: 'Partage momentanément indisponible',
+};
+
+/** Où en est le partage de la liste, en une ligne discrète. */
+function EtatPartage() {
+  const etat = etatSynchro.utiliser();
+  const { session } = useSession();
+  if (!session && etat === 'local') return null;
+  return (
+    <span className={`etat-synchro etat-${etat}`} role="status">
+      {ETATS[etat]}
+    </span>
+  );
+}
 
 export function Courses() {
   const articles = liste.utiliser();
@@ -47,6 +68,7 @@ export function Courses() {
                 ? 'Tout est dans le panier.'
                 : `${restants} article${restants > 1 ? 's' : ''} à prendre sur ${articles.length}`}
           </p>
+          <EtatPartage />
         </div>
         {articles.length > 0 ? (
           <button type="button" className={`bouton-discret ${edition ? 'actif' : ''}`} aria-pressed={edition} onClick={() => setEdition(!edition)}>
@@ -225,7 +247,10 @@ function AjoutArticle() {
         e.preventDefault();
         const t = texte.trim();
         if (!t) return;
-        liste.modifier((l) => [...l, { id: nouvelId(), texte: t, rayon, recetteId: null, recette: '', ingredient: null, coche: false }]);
+        liste.modifier((l) => [
+          ...l,
+          { id: nouvelId(), creeLe: new Date().toISOString(), texte: t, rayon, recetteId: null, recette: '', ingredient: null, coche: false },
+        ]);
         setTexte('');
       }}
     >
