@@ -105,8 +105,9 @@ export function marquerAideVue(cle: string): void {
 
 /** Identifiant UUID v4 (format attendu par la base). */
 export function nouvelId(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) return crypto.randomUUID();
-  const o = crypto.getRandomValues(new Uint8Array(16));
+  const c: Crypto = globalThis.crypto;
+  if (typeof c.randomUUID === 'function') return c.randomUUID();
+  const o = c.getRandomValues(new Uint8Array(16));
   o[6] = (o[6] & 0x0f) | 0x40;
   o[8] = (o[8] & 0x3f) | 0x80;
   const h = [...o].map((x) => x.toString(16).padStart(2, '0')).join('');
