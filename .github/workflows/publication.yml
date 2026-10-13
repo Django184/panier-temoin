@@ -73,6 +73,14 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Tests du lecteur de ticket
         run: npm test
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Codes Aztec, QR et EAN-13 relus par un décodeur indépendant
+        run: |
+          node scripts/codes_de_test.ts codes-test
+          pip install --quiet zxing-cpp pillow
+          python scripts/verifier_codes.py codes-test
       - name: Vérification des types et build
         run: npm run build
       - name: Préparation de la publication
