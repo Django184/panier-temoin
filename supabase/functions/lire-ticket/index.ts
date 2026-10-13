@@ -14,7 +14,15 @@
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? 'https://tpovnthrvlajmyjrfltn.supabase.co';
 // Clé publique de l'app : sert seulement à vérifier la session de l'appelant.
 const CLE_PUBLIQUE = 'sb_publishable_PstYw1ciAo1ubEygjMRDsA__EsKrFyS';
-const MODELE = Deno.env.get('MISTRAL_MODELE') ?? 'mistral-small-latest';
+// Modèles d'image essayés dans l'ordre. Sur l'offre gratuite, certains
+// modèles (mistral-small, mistral-medium) ont une limite de 0 requête par
+// minute : on passe au suivant en cas de refus (429, 403, modèle inconnu).
+const MODELES = [
+  ...(Deno.env.get('MISTRAL_MODELE') ? [Deno.env.get('MISTRAL_MODELE') as string] : []),
+  'ministral-14b-latest',
+  'pixtral-12b-2409',
+  'ministral-8b-latest',
+];
 const TAILLE_MAX_BASE64 = 8_000_000; // environ 6 Mo d'image
 const TYPES_ACCEPTES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -124,36 +132,44 @@ Deno.serve(async (requete: Request): Promise<Response> => {
     return echec('configuration', 'La lecture automatique n’est pas encore configurée (clé Mistral manquante).', 503, cors);
   }
 
-  let reponse: Response;
-  try {
-    reponse = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${cle}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: MODELE,
-        temperature: 0,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: CONSIGNE },
-              { type: 'image_url', image_url: `data:${type};base64,${image}` },
-            ],
-          },
-        ],
-      }),
-    });
-  } catch {
-    return echec('service', 'Le service de lecture est injoignable. Réessayez dans un instant.', 502, cors);
+  let reponse: Response | null = null;
+  let limite = false;
+  for (const modele of MODELES) {
+    try {
+      reponse = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${cle}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: modele,
+          temperature: 0,
+          response_format: { type: 'json_object' },
+          messages: [
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: CONSIGNE },
+                { type: 'image_url', image_url: `data:${type};base64,${image}` },
+              ],
+            },
+          ],
+        }),
+      });
+    } catch {
+      reponse = null;
+      continue;
+    }
+    if (reponse.ok) break;
+    // Le détail reste dans les journaux de la fonction, sans la photo.
+    console.error(`Mistral ${modele} ${reponse.status} : ${(await reponse.text()).slice(0, 300)}`);
+    if (reponse.status === 429) limite = true;
+    if (![400, 403, 404, 429].includes(reponse.status) && reponse.status < 500) break;
   }
 
-  if (reponse.status === 429) {
-    return echec('limite', 'Trop de lectures en peu de temps. Réessayez dans une minute.', 429, cors);
+  if (!reponse) {
+    return echec('service', 'Le service de lecture est injoignable. Réessayez dans un instant.', 502, cors);
   }
   if (!reponse.ok) {
-    // Le détail reste dans les journaux de la fonction, sans la photo.
-    console.error(`Mistral ${reponse.status} : ${(await reponse.text()).slice(0, 500)}`);
+    if (limite) return echec('limite', 'Trop de lectures en peu de temps. Réessayez dans une minute.', 429, cors);
     return echec('service', `Le service de lecture a répondu par une erreur (${reponse.status}).`, 502, cors);
   }
 

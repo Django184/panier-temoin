@@ -30,7 +30,7 @@ Téléphone (PWA)                     GitHub                         Supabase (Z
   ← courbes, comparaisons, paniers ←──────────────────────────────── fonctions publiques
 ```
 
-- La photo, réduite à 2000 pixels, passe par la fonction `lire-ticket` de Supabase, qui la transmet à Mistral (`mistral-small-latest`) et renvoie les lignes lues. Ni la fonction ni l’app ne conservent l’image. La consigne demande de ne jamais recopier le numéro Cumulus ni les données de paiement, et l’app ne les enregistre pas.
+- La photo, réduite à 2000 pixels, passe par la fonction `lire-ticket` de Supabase, qui la transmet à Mistral (`ministral-14b-latest`, puis `pixtral-12b-2409` ou `ministral-8b-latest` si le premier est saturé) et renvoie les lignes lues. Ni la fonction ni l’app ne conservent l’image. La consigne demande de ne jamais recopier le numéro Cumulus ni les données de paiement, et l’app ne les enregistre pas.
 - La clé Mistral reste dans les secrets de Supabase ; la fonction n’accepte que les utilisateurs connectés.
 - Toute écriture passe par la fonction `soumettre_ticket`, qui refuse les doublons et met de côté les prix inhabituels.
 - La consultation des prix est ouverte sans compte ; l’ajout de tickets est réservé aux comptes créés à la main.
@@ -108,7 +108,7 @@ Coût d’exploitation : **0 CHF par mois** pour deux utilisateurs.
 | GitHub Pages | Gratuit pour un dépôt public ; site de 1 Go au plus, 100 Go de trafic par mois (limite souple) | Moins de 1 Mo | 0 CHF |
 | GitHub Actions | Gratuit pour un dépôt public avec les machines standard | Quelques minutes par envoi, deux courtes tâches par semaine | 0 CHF |
 | Supabase Edge Functions | Comprises dans le plan gratuit (500 000 appels par mois) | Un appel par ticket | 0 CHF |
-| Lecture des tickets (Mistral) | Plan gratuit « Experiment », limité en débit ; pas de carte bancaire, donc aucune facturation possible | Un appel par ticket, quelques secondes | 0 CHF |
+| Lecture des tickets (Mistral) | Plan gratuit « Experiment » : 30 lectures par minute avec `ministral-14b` (certains modèles, comme `mistral-small`, y sont bloqués) ; pas de carte bancaire, donc aucune facturation possible | Un appel par ticket, quelques secondes | 0 CHF |
 | Import par l’app Claude (secours) | Compris dans un abonnement Claude existant | Ponctuel | 0 CHF supplémentaire |
 
 Pourquoi Mistral : l’API Claude est facturée à part de l’abonnement Claude Pro, et les conditions du plan gratuit de Gemini en interdisent l’usage pour des utilisateurs en Suisse et dans l’UE. Sur le plan gratuit, Mistral indique que les requêtes peuvent servir à entraîner ses modèles ; on peut s’y opposer depuis les réglages de confidentialité du compte Mistral ([politique d’entraînement](https://help.mistral.ai/en/articles/323757-do-you-use-my-user-data-to-train-your-artificial-intelligence-models)). C’est une raison de plus pour replier le bas du ticket.
