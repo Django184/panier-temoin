@@ -432,9 +432,16 @@ function LigneTicket({
 }) {
   const reglee = ligneReglee(ligne);
   const maj = (patch: Partial<LigneBrouillon>, champ?: ChampLigne) => majLigne(ligne.cle, patch, champ);
+  const element = useRef<HTMLLIElement>(null);
+
+  // La ligne ouverte remonte en haut de l'écran pour que l'éditeur ne
+  // soit pas caché par la barre d'envoi.
+  useEffect(() => {
+    if (ouverte) element.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }, [ouverte]);
 
   return (
-    <li className={`ligne ${reglee ? '' : 'ligne-a-verifier'} ${ouverte ? 'ligne-ouverte' : ''}`}>
+    <li ref={element} className={`ligne ${reglee ? '' : 'ligne-a-verifier'} ${ouverte ? 'ligne-ouverte' : ''}`}>
       <button type="button" className="ligne-rangee" aria-expanded={ouverte} onClick={basculer}>
         <span className="ligne-texte">
           <span className="ligne-libelle">{ligne.libelle || 'Nouvelle ligne'}</span>
