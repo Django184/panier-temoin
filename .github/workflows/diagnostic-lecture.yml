@@ -1,0 +1,26 @@
+# Diagnostic de la lecture : envoie à Mistral un ticket fictif dessiné
+# pour l'occasion, avec chaque modèle d'image, et affiche la réponse
+# (code, en-têtes de limite, début du corps). Lancement manuel.
+
+name: Diagnostic lecture
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    env:
+      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Ticket fictif et appels
+        run: |
+          pip install --quiet pillow
+          python scripts/diagnostic_lecture.py
