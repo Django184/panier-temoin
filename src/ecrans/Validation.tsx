@@ -442,8 +442,14 @@ function LigneTicket({
             {resumeQuantite(ligne)}
             {ligne.rabaisCentimes > 0 ? <span className="ligne-rabais"> − {enFrancs(ligne.rabaisCentimes)}</span> : null}
           </span>
-          <span className="ligne-produit">
-            {ligne.produitId ? `→ ${ligne.produitNom}` : ligne.produitNom.trim() ? `Nouveau produit : ${ligne.produitNom}` : 'Produit à choisir'}
+          <span className="ligne-lien-produit">
+            {ligne.produitId
+              ? `→ ${ligne.produitNom}`
+              : !ligne.produitNom.trim()
+                ? 'Produit à choisir'
+                : ligne.produitNom.trim() === ligne.libelle.trim()
+                  ? 'Nouveau produit'
+                  : `Nouveau produit : ${ligne.produitNom}`}
           </span>
         </span>
         <span className="ligne-droite">

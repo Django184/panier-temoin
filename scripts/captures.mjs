@@ -60,6 +60,8 @@ function serie() {
 function brouillonDemo() {
   const b = lireTicket(TICKET_2_IDEAL);
   b.methode = 'lecture_ia';
+  // Comme pour la lecture par l'IA, l'unité n'est pas devinée.
+  b.lignes = b.lignes.map((l) => ({ ...l, douteux: l.douteux.filter((d) => d !== 'unite') }));
   // Une ligne mal lue, pour voir l'état « À vérifier ».
   b.lignes[3] = { ...b.lignes[3], totalCentimes: 920, douteux: ['total'] };
   b.lignes[0] = { ...b.lignes[0], produitId: 'p1', produitNom: 'Agnesi Linguine N.10' };
@@ -139,7 +141,8 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
   await page.waitForTimeout(800);
   if (action) await action(page);
   await page.waitForTimeout(600);
-  await page.screenshot({ path: `${SORTIE}/${nom}.png`, fullPage: true });
+  await page.screenshot({ path: `${SORTIE}/${nom}.png` });
+  await page.screenshot({ path: `${SORTIE}/${nom}-complet.png`, fullPage: true });
   console.log(`capture : ${nom}`);
   await contexte.close();
 }

@@ -22,18 +22,17 @@ Appareil : ____________________  Système : ____________________  Date : _______
 ## 3. Capture et lecture
 
 - [ ] « Photographier le ticket » ouvre directement l’appareil photo arrière.
-- [ ] « Importer une photo ou une capture » ouvre la photothèque.
+- [ ] « Choisir une photo ou une capture » ouvre la photothèque.
 - [ ] **iPhone** : une photo au format HEIC est acceptée.
-- [ ] Premier ticket : la barre de progression affiche « Chargement du moteur de lecture », puis « Lecture du ticket ».
-- [ ] Ticket photographié de côté : la lecture le redresse, ou le lien « Relire la photo en la tournant » corrige.
-- [ ] Deuxième ticket : la lecture démarre sans recharger le moteur.
-- [ ] Mode avion après un premier ticket : la lecture fonctionne encore (l’envoi, lui, attend le réseau).
+- [ ] Après la photo, « Lecture du ticket… » s’affiche avec l’aperçu, puis l’écran de vérification en quelques secondes.
+- [ ] Le magasin, la date, l’heure et le total sont remplis ; le numéro Cumulus n’apparaît nulle part.
+- [ ] Mode avion : un message clair propose de réessayer, de saisir à la main ou de passer par l’app Claude.
 
 ## 4. Validation et envoi
 
 - [ ] Les valeurs incertaines sont surlignées ; une valeur modifiée passe au bleu « stylo ».
 - [ ] Le numéro de filiale connu affiche le nom du magasin.
-- [ ] Une ligne pesée affiche « Pesé » et un poids calculé, non modifiable.
+- [ ] Une ligne pesée affiche le poids calculé et le prix au kilo (« 0.881 kg × 2.95/kg »).
 - [ ] Modifier un prix fait apparaître ou disparaître l’écart sur la ligne et sur la somme.
 - [ ] « Envoyer le ticket » reste grisé tant qu’un problème est listé.
 - [ ] Le clavier numérique s’ouvre sur les champs de montant.
@@ -41,7 +40,7 @@ Appareil : ____________________  Système : ____________________  Date : _______
 - [ ] Envoi : « Ticket enregistré », avec le nombre de lignes.
 - [ ] Renvoyer le même ticket : « Ticket déjà enregistré ».
 
-## 5. Import par l’app Claude
+## 5. Import par l’app Claude (secours)
 
 - [ ] « Copier la consigne » affiche « Consigne copiée ».
 - [ ] La consigne collée dans l’app Claude avec la photo produit un JSON.

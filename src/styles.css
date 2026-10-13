@@ -495,7 +495,7 @@ mark.exemple-douteux {
 
 .conseils,
 .etapes {
-  margin: 0;
+  margin-bottom: 0;
   padding-left: 1.2rem;
   color: var(--encre-2);
   font-size: 0.92rem;
@@ -702,7 +702,9 @@ mark.exemple-douteux {
   color: var(--vert);
 }
 
-.ligne-produit {
+.ligne-lien-produit {
+  display: block;
+  margin-top: 0.15rem;
   font-size: 0.8rem;
   color: var(--encre-2);
   overflow: hidden;
@@ -947,17 +949,19 @@ mark.exemple-douteux {
    --------------------------------------------------------------------- */
 
 .filtres {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
   gap: 0.5rem;
-  align-items: center;
   margin-bottom: 0.75rem;
 }
 
 .filtres select {
-  width: auto;
-  flex: 1 1 10rem;
-  min-height: 42px;
+  min-height: 40px;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.9rem;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border-color: var(--trait);
 }
 
 .chiffre-cle {
@@ -1018,17 +1022,28 @@ mark.exemple-douteux {
 
 .comparaison-ligne {
   display: grid;
-  grid-template-columns: minmax(0, 9rem) 1fr auto;
+  grid-template-columns: minmax(0, 1.3fr) minmax(3rem, 1fr) auto;
   gap: 0.75rem;
   align-items: center;
   padding: 0.55rem 0;
 }
 
+.comparaison-ligne + .comparaison-ligne {
+  border-top: 1px solid var(--trait);
+}
+
 .comparaison-nom {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   font-size: 0.9rem;
   font-weight: 550;
+}
+
+.comparaison-nom > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .comparaison-nom .discret {

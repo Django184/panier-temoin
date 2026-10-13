@@ -31,7 +31,7 @@ export function ComparaisonMagasins({ lignes }: { lignes: PrixMagasin[] }) {
             <div className="comparaison-nom">
               <span>{l.magasin_nom}</span>
               <span className="discret">
-                {l.nb_releves} relevé{l.nb_releves > 1 ? 's' : ''}, dernier le {dateSuisse(l.dernier_releve)}
+                {l.nb_releves} relevé{l.nb_releves > 1 ? 's' : ''} · {dateSuisse(l.dernier_releve)}
               </span>
             </div>
             <div className="comparaison-piste" aria-hidden="true">
