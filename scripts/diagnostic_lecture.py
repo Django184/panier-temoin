@@ -9,7 +9,9 @@ import base64
 import io
 import json
 import os
+import re
 import time
+from pathlib import Path
 import urllib.error
 import urllib.request
 
@@ -30,6 +32,11 @@ LIGNES = [
     "",
     "Filiale 099999   12.10.2026   19:00:05",
 ]
+
+
+# Même consigne que la fonction lire-ticket.
+SOURCE = Path(__file__).resolve().parent.parent / "supabase/functions/lire-ticket/index.ts"
+CONSIGNE = re.search(r"const CONSIGNE = `(.*?)`;", SOURCE.read_text(), re.S).group(1)
 
 
 def ticket_jpeg() -> str:
@@ -55,7 +62,7 @@ def appeler(modele: str, image: str) -> None:
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": "Lis ce ticket et réponds en JSON : {\"total\": \"...\"}"},
+                    {"type": "text", "text": CONSIGNE},
                     {"type": "image_url", "image_url": f"data:image/jpeg;base64,{image}"},
                 ],
             }
@@ -77,14 +84,24 @@ def appeler(modele: str, image: str) -> None:
         statut, entetes, texte = erreur.code, erreur.headers, erreur.read().decode()
     duree = time.time() - debut
     limites = {k: v for k, v in entetes.items() if "ratelimit" in k.lower() or k.lower() == "retry-after"}
-    resume = f"{modele} : HTTP {statut} en {duree:.1f} s ; limites {limites} ; {texte[:400]}"
+    if statut == 200:
+        try:
+            contenu = json.loads(texte)["choices"][0]["message"]["content"]
+            t = json.loads(contenu)
+            lignes = " | ".join(
+                f"{l.get('libelle')} {l.get('quantite')}x{l.get('prix')} -{l.get('rabais')} ={l.get('total')}" for l in t.get("lignes", [])
+            )
+            texte = f"filiale {t.get('magasin', {}).get('numero_filiale')} {t.get('date')} {t.get('heure')} total {t.get('total')} eco {t.get('vous_economisez')} ; {lignes}"
+        except Exception as e:  # noqa: BLE001
+            texte = f"réponse non JSON ({e}) : {texte[:300]}"
+    resume = f"{modele} : HTTP {statut} en {duree:.1f} s ; restant/min {limites.get('x-ratelimit-remaining-req-minute')} ; {texte[:700]}"
     # En annotation, pour être lisible sans ouvrir les journaux.
     print("::notice::" + resume.replace("\n", " ").replace("%", "%25"))
 
 
 def main() -> None:
     image = ticket_jpeg()
-    for modele in ["mistral-small-latest", "mistral-medium-latest", "pixtral-12b-2409", "pixtral-large-latest"]:
+    for modele in ["ministral-14b-latest", "pixtral-12b-2409", "ministral-8b-latest", "mistral-large-latest", "magistral-small-latest"]:
         appeler(modele, image)
         time.sleep(3)
 
