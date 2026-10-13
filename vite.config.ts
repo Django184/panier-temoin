@@ -38,7 +38,10 @@ export default defineConfig({
         navigateFallback: `${BASE}index.html`,
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith(`${BASE}ocr/`),
+            // Une expression régulière, pas une fonction : Workbox recopie
+            // ce motif tel quel dans le service worker, où les variables
+            // de ce fichier n'existent pas.
+            urlPattern: /\/panier-temoin\/ocr\//,
             handler: 'CacheFirst',
             options: {
               cacheName: 'moteur-ocr',
