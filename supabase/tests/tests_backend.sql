@@ -552,13 +552,14 @@ end $$;
 reset role;
 set local role authenticated;
 select set_config('request.jwt.claims', current_setting('test.compte_a'), true);
-insert into public.carte_cumulus (code) values ('CODE-DE-TEST-123')
-on conflict (id) do update set code = excluded.code;
+insert into public.carte_cumulus (code, numero) values ('CODE-DE-TEST-123', '2099000000002')
+on conflict (id) do update set code = excluded.code, numero = excluded.numero;
 
 select set_config('request.jwt.claims', current_setting('test.compte_b'), true);
 do $$
 begin
-  perform pg_temp.verifier((select code from public.carte_cumulus) = 'CODE-DE-TEST-123',
+  perform pg_temp.verifier(
+    (select code = 'CODE-DE-TEST-123' and numero = '2099000000002' from public.carte_cumulus),
     'B lit la carte Cumulus enregistrée par A');
 end $$;
 

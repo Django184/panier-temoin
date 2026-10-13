@@ -1,10 +1,12 @@
-// Carte Cumulus du foyer, en QR code à présenter à la caisse. Le code est
-// gardé dans la base (comptes connectés seulement) et copié sur le
+// Carte Cumulus du foyer, à présenter à la caisse : code Aztec (comme
+// dans Google Wallet et l'app Migros) ou code-barres du numéro de carte.
+// Gardée dans la base (comptes connectés seulement) et copiée sur le
 // téléphone pour s'afficher même sans réseau au magasin.
 
 import { useEffect, useState } from 'react';
-import { carteLocale, enregistrerCarteCumulus, lireCarteCumulus, supprimerCarteCumulus } from '../api.ts';
-import { CodeQR } from '../composants/CodeQR.tsx';
+import { carteLocale, enregistrerCarteCumulus, lireCarteCumulus, supprimerCarteCumulus, type Carte } from '../api.ts';
+import { CodeAztec, CodeBarres } from '../composants/CodesCarte.tsx';
+import { ean13Valide } from '../lib/ean13.ts';
 import { lien } from '../routeur.ts';
 
 /** Garde l'écran allumé tant que la carte est affichée (si le navigateur le permet). */
@@ -35,48 +37,30 @@ function useEcranAllume(actif: boolean) {
   }, [actif]);
 }
 
+type Format = 'aztec' | 'barres';
+
 export function CarteCumulus() {
-  const [code, setCode] = useState<string | null>(carteLocale);
-  const [chargement, setChargement] = useState(code === null);
-  const [saisie, setSaisie] = useState('');
+  const [carte, setCarte] = useState<Carte | null>(carteLocale);
+  const [chargement, setChargement] = useState(carte === null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [modifier, setModifier] = useState(false);
+  const [format, setFormat] = useState<Format>('aztec');
 
-  useEcranAllume(code !== null && !modifier);
+  const aztec = carte?.code ?? null;
+  const numero = carte?.numero && ean13Valide(carte.numero) ? carte.numero : null;
+  const formatAffiche: Format | null = format === 'aztec' ? (aztec ? 'aztec' : numero ? 'barres' : null) : numero ? 'barres' : aztec ? 'aztec' : null;
+
+  useEcranAllume(formatAffiche !== null && !modifier);
 
   useEffect(() => {
     lireCarteCumulus()
-      .then((c) => setCode(c))
+      .then(setCarte)
       .catch((e: Error) => {
         // Hors ligne : la copie locale suffit pour afficher la carte.
         if (carteLocale() === null) setErreur(e.message);
       })
       .finally(() => setChargement(false));
   }, []);
-
-  const enregistrer = async () => {
-    setErreur(null);
-    try {
-      await enregistrerCarteCumulus(saisie);
-      setCode(saisie.trim());
-      setSaisie('');
-      setModifier(false);
-    } catch (e) {
-      setErreur(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  const formulaire = (
-    <div className="formulaire">
-      <label className="champ champ-large">
-        <span className="champ-etiquette">Code de la carte (texte du QR code Cumulus)</span>
-        <input value={saisie} onChange={(e) => setSaisie(e.target.value)} autoComplete="off" spellCheck={false} />
-      </label>
-      <button type="button" className="bouton-principal" disabled={saisie.trim().length < 4} onClick={() => void enregistrer()}>
-        Enregistrer la carte
-      </button>
-    </div>
-  );
 
   return (
     <div className="ecran ecran-carte">
@@ -91,52 +75,127 @@ export function CarteCumulus() {
         </p>
       ) : null}
 
-      {code && !modifier ? (
+      {formatAffiche && !modifier ? (
         <>
-          <div className="carte-qr">
-            <CodeQR texte={code} titre="QR code de la carte Cumulus" />
-            <p className="carte-qr-legende">Cumulus</p>
+          {aztec && numero ? (
+            <div className="segments segments-larges" role="radiogroup" aria-label="Format du code">
+              <button type="button" role="radio" aria-checked={formatAffiche === 'aztec'} className={`interrupteur ${formatAffiche === 'aztec' ? 'actif' : ''}`} onClick={() => setFormat('aztec')}>
+                Code Aztec
+              </button>
+              <button type="button" role="radio" aria-checked={formatAffiche === 'barres'} className={`interrupteur ${formatAffiche === 'barres' ? 'actif' : ''}`} onClick={() => setFormat('barres')}>
+                Code-barres
+              </button>
+            </div>
+          ) : null}
+          <div className={`carte-code ${formatAffiche === 'barres' ? 'carte-code-barres' : ''}`}>
+            {formatAffiche === 'aztec' && aztec ? <CodeAztec texte={aztec} /> : numero ? <CodeBarres numero={numero} /> : null}
+            <p className="carte-code-legende">Cumulus</p>
           </div>
-          <p className="discret centre">Montez la luminosité de l’écran si la caisse ne lit pas le code.</p>
+          <p className="discret centre">
+            Montez la luminosité de l’écran si la caisse ne lit pas le code
+            {aztec && numero ? ', ou essayez l’autre format' : ''}.
+          </p>
           <div className="actions">
             <a className="bouton-secondaire" href={lien('courses')}>
               Liste de courses
             </a>
             <button type="button" className="bouton-lien" onClick={() => setModifier(true)}>
-              Changer de carte
+              Modifier la carte
             </button>
           </div>
         </>
       ) : chargement ? (
         <p className="discret">Chargement…</p>
       ) : (
-        <>
-          {formulaire}
-          {code ? (
-            <div className="actions">
-              <button type="button" className="bouton-secondaire" onClick={() => setModifier(false)}>
-                Annuler
-              </button>
-              <button
-                type="button"
-                className="bouton-lien bouton-danger"
-                onClick={async () => {
+        <FormulaireCarte
+          carte={carte}
+          onEnregistre={(c) => {
+            setCarte(c);
+            setModifier(false);
+          }}
+          onAnnule={carte ? () => setModifier(false) : undefined}
+          onSupprime={
+            carte
+              ? async () => {
                   if (!window.confirm('Retirer la carte Cumulus pour tous les comptes ?')) return;
                   try {
                     await supprimerCarteCumulus();
-                    setCode(null);
+                    setCarte(null);
                     setModifier(false);
                   } catch (e) {
                     setErreur(e instanceof Error ? e.message : String(e));
                   }
-                }}
-              >
-                Retirer la carte
-              </button>
-            </div>
-          ) : null}
-        </>
+                }
+              : undefined
+          }
+        />
       )}
+    </div>
+  );
+}
+
+function FormulaireCarte({
+  carte,
+  onEnregistre,
+  onAnnule,
+  onSupprime,
+}: {
+  carte: Carte | null;
+  onEnregistre: (c: Carte) => void;
+  onAnnule?: () => void;
+  onSupprime?: () => void;
+}) {
+  const [code, setCode] = useState(carte?.code ?? '');
+  const [numero, setNumero] = useState(carte?.numero ?? '');
+  const [erreur, setErreur] = useState<string | null>(null);
+  const numeroPropre = numero.replace(/\s/g, '');
+
+  const enregistrer = async () => {
+    if (numeroPropre && !ean13Valide(numeroPropre)) {
+      setErreur('Le numéro de carte doit compter 13 chiffres (par exemple 2099…), sans erreur de frappe.');
+      return;
+    }
+    const nouvelle = { code: code.trim() || null, numero: numeroPropre || null };
+    try {
+      await enregistrerCarteCumulus(nouvelle);
+      onEnregistre(nouvelle);
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : String(e));
+    }
+  };
+
+  return (
+    <div className="formulaire">
+      <label className="champ champ-large">
+        <span className="champ-etiquette">Code Google Wallet (texte partagé depuis la carte Cumulus de Wallet)</span>
+        <input value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" spellCheck={false} />
+      </label>
+      <label className="champ champ-large">
+        <span className="champ-etiquette">Numéro de carte (13 chiffres, partagé depuis l’app Migros)</span>
+        <input value={numero} onChange={(e) => setNumero(e.target.value)} inputMode="numeric" autoComplete="off" />
+      </label>
+      {erreur ? (
+        <p className="erreur" role="alert">
+          {erreur}
+        </p>
+      ) : null}
+      <button type="button" className="bouton-principal" disabled={!code.trim() && !numeroPropre} onClick={() => void enregistrer()}>
+        Enregistrer la carte
+      </button>
+      {onAnnule || onSupprime ? (
+        <div className="actions">
+          {onAnnule ? (
+            <button type="button" className="bouton-secondaire" onClick={onAnnule}>
+              Annuler
+            </button>
+          ) : null}
+          {onSupprime ? (
+            <button type="button" className="bouton-lien bouton-danger" onClick={onSupprime}>
+              Retirer la carte
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

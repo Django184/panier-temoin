@@ -1,11 +1,10 @@
-// Génère des codes Aztec, QR et EAN-13 de test (images PGM) avec leur
+// Génère des codes Aztec et EAN-13 de test (images PGM) avec leur
 // texte attendu, pour vérification par un décodeur indépendant
 // (zxing-cpp) dans le workflow « Tests et publication ».
 // Usage : node scripts/codes_de_test.ts <dossier>
 
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { genererAztec } from '../src/lib/aztec.ts';
-import { genererQR } from '../src/lib/qr.ts';
 import { genererEan13 } from '../src/lib/ean13.ts';
 
 const dossier = process.argv[2] ?? 'codes-test';
@@ -38,10 +37,6 @@ const attendus: Array<{ fichier: string; format: string; texte: string }> = [];
 for (const [nom, texte] of Object.entries(TEXTES)) {
   writeFileSync(`${dossier}/aztec-${nom}.pgm`, image(genererAztec(texte), 3, 6));
   attendus.push({ fichier: `aztec-${nom}.pgm`, format: 'Aztec', texte });
-  if (texte.length <= 150) {
-    writeFileSync(`${dossier}/qr-${nom}.pgm`, image(genererQR(texte), 4, 6));
-    attendus.push({ fichier: `qr-${nom}.pgm`, format: 'QRCode', texte });
-  }
 }
 for (const numero of ['2099000000002', '4006381333931']) {
   const barres = genererEan13(numero);

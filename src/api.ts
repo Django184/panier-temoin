@@ -68,21 +68,31 @@ export async function deconnecter(): Promise<void> {
 // Carte Cumulus du foyer (comptes connectés seulement)
 // ---------------------------------------------------------------------
 
-// Copie locale du code, pour afficher la carte au magasin même sans
-// réseau. Effacée à la déconnexion.
+// Deux formes de la carte : « code » (texte du code Aztec de Google
+// Wallet) et « numero » (13 chiffres, code-barres EAN-13). Copie locale,
+// pour afficher la carte au magasin même sans réseau ; effacée à la
+// déconnexion.
+export interface Carte {
+  code: string | null;
+  numero: string | null;
+}
+
 const CLE_CARTE = 'panier-temoin:carte-cumulus';
 
-export function carteLocale(): string | null {
+export function carteLocale(): Carte | null {
   try {
-    return window.localStorage.getItem(CLE_CARTE);
+    const brut = window.localStorage.getItem(CLE_CARTE);
+    if (!brut) return null;
+    const carte = JSON.parse(brut) as Carte;
+    return carte.code || carte.numero ? carte : null;
   } catch {
     return null;
   }
 }
 
-function garderCarteLocale(code: string | null): void {
+function garderCarteLocale(carte: Carte | null): void {
   try {
-    if (code) window.localStorage.setItem(CLE_CARTE, code);
+    if (carte && (carte.code || carte.numero)) window.localStorage.setItem(CLE_CARTE, JSON.stringify(carte));
     else window.localStorage.removeItem(CLE_CARTE);
   } catch {
     // Stockage indisponible : la carte sera relue en ligne.
@@ -93,19 +103,20 @@ function oublierCarteLocale(): void {
   garderCarteLocale(null);
 }
 
-/** Code de la carte enregistré dans la base (null s'il n'y en a pas). */
-export async function lireCarteCumulus(): Promise<string | null> {
-  const { data, error } = await supabase.from('carte_cumulus').select('code').maybeSingle();
+/** Carte enregistrée dans la base (null s'il n'y en a pas). */
+export async function lireCarteCumulus(): Promise<Carte | null> {
+  const { data, error } = await supabase.from('carte_cumulus').select('code, numero').maybeSingle();
   if (error) throw erreur(error);
-  const code = (data as { code: string } | null)?.code ?? null;
-  garderCarteLocale(code);
-  return code;
+  const carte = (data as Carte | null) ?? null;
+  garderCarteLocale(carte);
+  return carte;
 }
 
-export async function enregistrerCarteCumulus(code: string): Promise<void> {
-  const { error } = await supabase.from('carte_cumulus').upsert({ id: 1, code: code.trim() });
+export async function enregistrerCarteCumulus(carte: Carte): Promise<void> {
+  const propre = { code: carte.code?.trim() || null, numero: carte.numero?.replace(/\s/g, '') || null };
+  const { error } = await supabase.from('carte_cumulus').upsert({ id: 1, ...propre, modifie_le: new Date().toISOString() });
   if (error) throw erreur(error);
-  garderCarteLocale(code.trim());
+  garderCarteLocale(propre);
 }
 
 export async function supprimerCarteCumulus(): Promise<void> {

@@ -100,7 +100,7 @@ function reponseSimulee(url, entetes) {
   }
   if (chemin.endsWith('/rest/v1/carte_cumulus')) {
     // Code fictif : jamais la vraie carte dans les captures.
-    const carte = { code: 'CARTE-FICTIVE-0000-DEMO-ABCDEFGHIJKLMNOP==' };
+    const carte = { code: '9201A11/CarteFictiveDemo0000AbCdEfGhIjKlMnOpQr==', numero: '2099000000002' };
     return objet ? carte : [carte];
   }
   if (chemin.endsWith('/rest/v1/favoris')) {
@@ -199,6 +199,12 @@ const cocherDeux = async (page) => {
 };
 await capturer('10-courses', { chemin: LIEN_COURSES.slice(2), action: cocherDeux });
 await capturer('11-carte-cumulus', { chemin: 'cumulus' });
+await capturer('11b-carte-cumulus-code-barres', {
+  chemin: 'cumulus',
+  action: async (page) => {
+    await page.getByRole('radio', { name: 'Code-barres' }).click();
+  },
+});
 await capturer('12-courses-sombre', { theme: 'dark', chemin: LIEN_COURSES.slice(2), action: cocherDeux });
 await capturer('06-explorer', {
   chemin: 'explorer',

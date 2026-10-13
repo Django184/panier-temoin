@@ -44,6 +44,8 @@ GitHub : Pages sert l'app ; Actions teste, construit, publie et maintient Supaba
 | `src/lecture/` | Adresse du projet Claude, arrivée des liens d’import |
 | `src/ecrans/`, `src/composants/` | Interface |
 | `.github/workflows/` | Tests, build, publication, maintien de Supabase |
+| `src/lib/aztec.ts`, `src/lib/ean13.ts` | Carte Cumulus : code Aztec (comme Google Wallet) et code-barres EAN-13, relus par zxing-cpp en intégration continue |
+| `src/lib/courses.ts` | Liste de courses : lecture des recettes de Chef Feta, parcours du magasin |
 | `docs/checklist-telephone.md` | Tests à faire sur iPhone et Android |
 
 ## Mise en place pas à pas
