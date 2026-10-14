@@ -75,6 +75,8 @@ export async function deconnecter(): Promise<void> {
 export interface Carte {
   code: string | null;
   numero: string | null;
+  /** Date d'enregistrement du code de l'app (il change régulièrement). */
+  modifie_le?: string | null;
 }
 
 const CLE_CARTE = 'panier-temoin:carte-cumulus';
@@ -105,7 +107,7 @@ function oublierCarteLocale(): void {
 
 /** Carte enregistrée dans la base (null s'il n'y en a pas). */
 export async function lireCarteCumulus(): Promise<Carte | null> {
-  const { data, error } = await supabase.from('carte_cumulus').select('code, numero').maybeSingle();
+  const { data, error } = await supabase.from('carte_cumulus').select('code, numero, modifie_le').maybeSingle();
   if (error) throw erreur(error);
   const carte = (data as Carte | null) ?? null;
   garderCarteLocale(carte);
@@ -113,8 +115,12 @@ export async function lireCarteCumulus(): Promise<Carte | null> {
 }
 
 export async function enregistrerCarteCumulus(carte: Carte): Promise<void> {
-  const propre = { code: carte.code?.trim() || null, numero: carte.numero?.replace(/\s/g, '') || null };
-  const { error } = await supabase.from('carte_cumulus').upsert({ id: 1, ...propre, modifie_le: new Date().toISOString() });
+  const propre = {
+    code: carte.code?.trim() || null,
+    numero: carte.numero?.replace(/\s/g, '') || null,
+    modifie_le: new Date().toISOString(),
+  };
+  const { error } = await supabase.from('carte_cumulus').upsert({ id: 1, ...propre });
   if (error) throw erreur(error);
   garderCarteLocale(propre);
 }

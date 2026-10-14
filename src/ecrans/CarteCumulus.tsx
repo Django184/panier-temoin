@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { carteLocale, enregistrerCarteCumulus, lireCarteCumulus, supprimerCarteCumulus, type Carte } from '../api.ts';
 import { CodeAztec, CodeBarres } from '../composants/CodesCarte.tsx';
 import { ean13Valide } from '../lib/ean13.ts';
+import { dateSuisse } from '../composants/Champs.tsx';
 
 /** Garde l'écran allumé tant que la carte est affichée (si le navigateur le permet). */
 function useEcranAllume(actif: boolean) {
@@ -46,9 +47,22 @@ export function CarteCumulus() {
 
   const aztec = carte?.code ?? null;
   const numero = carte?.numero && ean13Valide(carte.numero) ? carte.numero : null;
+  // Le code-barres du numéro de carte ne change jamais : il passe en
+  // premier. Le code Aztec de l'app Migros change régulièrement (dernier
+  // octet incrémenté) : une copie ancienne est refusée en caisse.
+  const dateCode = carte?.modifie_le ? dateSuisse(carte.modifie_le.slice(0, 10)) : null;
   const diapos = [
-    ...(aztec ? [{ nom: 'Code Aztec', code: <CodeAztec texte={aztec} />, barres: false }] : []),
-    ...(numero ? [{ nom: 'Code-barres', code: <CodeBarres numero={numero} />, barres: true }] : []),
+    ...(numero ? [{ nom: 'Numéro de carte', code: <CodeBarres numero={numero} />, barres: true, note: null }] : []),
+    ...(aztec
+      ? [
+          {
+            nom: 'Code de l’app',
+            code: <CodeAztec texte={aztec} />,
+            barres: false,
+            note: `Copie du code de l’app Migros${dateCode ? ` du ${dateCode}` : ''}. Il change régulièrement : s’il est refusé, utilisez le numéro de carte ou mettez-le à jour.`,
+          },
+        ]
+      : []),
   ];
 
   useEcranAllume(diapos.length > 0 && !modifier);
@@ -107,7 +121,7 @@ export function CarteCumulus() {
             </div>
           ) : null}
           <p className="discret centre aide-carte">
-            {diapos.length > 1 ? 'Balayez pour changer de format. ' : ''}Montez la luminosité si la caisse ne lit pas le code.
+            {diapos[diapo]?.note ?? `${diapos.length > 1 ? 'Balayez pour changer de format. ' : ''}Montez la luminosité si la caisse ne lit pas le code.`}
           </p>
           <button type="button" className="bouton-lien lien-bas" onClick={() => setModifier(true)}>
             Modifier la carte
@@ -176,12 +190,12 @@ function FormulaireCarte({
   return (
     <div className="formulaire">
       <label className="champ champ-large">
-        <span className="champ-etiquette">Code Google Wallet (texte partagé depuis la carte Cumulus de Wallet)</span>
-        <input value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" spellCheck={false} />
+        <span className="champ-etiquette">Numéro de carte (13 chiffres, au dos de la carte ou partagé depuis l’app Migros)</span>
+        <input value={numero} onChange={(e) => setNumero(e.target.value)} inputMode="numeric" autoComplete="off" />
       </label>
       <label className="champ champ-large">
-        <span className="champ-etiquette">Numéro de carte (13 chiffres, partagé depuis l’app Migros)</span>
-        <input value={numero} onChange={(e) => setNumero(e.target.value)} inputMode="numeric" autoComplete="off" />
+        <span className="champ-etiquette">Code de l’app (facultatif, partagé depuis la carte Cumulus de Google Wallet ; il change régulièrement)</span>
+        <input value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" spellCheck={false} />
       </label>
       {erreur ? (
         <p className="erreur" role="alert">

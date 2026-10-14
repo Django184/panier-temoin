@@ -116,7 +116,7 @@ function reponseSimulee(url, entetes) {
   }
   if (chemin.endsWith('/rest/v1/carte_cumulus')) {
     // Code fictif : jamais la vraie carte dans les captures.
-    const carte = { code: '9201A11/CarteFictiveDemo0000AbCdEfGhIjKlMnOpQr==', numero: '2099000000002' };
+    const carte = { code: '9201A11/CarteFictiveDemo0000AbCdEfGhIjKlMnOpQr==', numero: '2099000000002', modifie_le: '2026-10-13T08:00:00Z' };
     return objet ? carte : [carte];
   }
   if (chemin.endsWith('/rest/v1/favoris')) {
@@ -269,10 +269,11 @@ await capturer('05-recette-modifier', {
   },
 });
 await capturer('06-carte', { chemin: 'carte' });
-await capturer('07-carte-code-barres', {
+await capturer('07-carte-code-app', {
   chemin: 'carte',
   action: async (page) => {
     await page.locator('.carrousel').evaluate((el) => el.scrollTo({ left: el.clientWidth }));
+    await page.waitForTimeout(500);
   },
 });
 await capturer('08-ticket', { chemin: 'ajouter' });
