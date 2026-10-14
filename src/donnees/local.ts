@@ -83,12 +83,22 @@ export interface Preferences {
   aides: boolean;
   /** Aides déjà lues (masquées même si les aides sont actives). */
   aidesVues: string[];
+  /** Articles cochés : regroupés en bas de la liste, ou laissés dans leur rayon. */
+  coches: 'en_bas' | 'en_place';
 }
 
-export const preferences = creerMagasin<Preferences>('panier-temoin:preferences', { aides: true, aidesVues: [] }, (v) => {
-  const p = (v ?? {}) as Partial<Preferences>;
-  return { aides: p.aides !== false, aidesVues: Array.isArray(p.aidesVues) ? p.aidesVues : [] };
-});
+export const preferences = creerMagasin<Preferences>(
+  'panier-temoin:preferences',
+  { aides: true, aidesVues: [], coches: 'en_bas' },
+  (v) => {
+    const p = (v ?? {}) as Partial<Preferences>;
+    return {
+      aides: p.aides !== false,
+      aidesVues: Array.isArray(p.aidesVues) ? p.aidesVues : [],
+      coches: p.coches === 'en_place' ? 'en_place' : 'en_bas',
+    };
+  },
+);
 
 /** Aide d'un écran : visible si les aides sont actives et qu'elle n'a pas été lue. */
 export function useAide(cle: string): { visible: boolean; masquer: () => void } {

@@ -105,10 +105,35 @@ export function Reglages() {
             onChange={(e) => {
               const actives = e.target.checked;
               // Réactiver les aides les montre toutes à nouveau.
-              preferences.modifier(() => ({ aides: actives, aidesVues: [] }));
+              preferences.modifier((p) => ({ ...p, aides: actives, aidesVues: [] }));
             }}
           />
         </label>
+        <div className="reglage-choix">
+          <span>
+            <strong>Articles pris</strong>
+            <span className="discret">Dans la liste de courses</span>
+          </span>
+          <div className="segments" role="radiogroup" aria-label="Articles pris">
+            {(
+              [
+                ['en_bas', 'En bas'],
+                ['en_place', 'À leur place'],
+              ] as const
+            ).map(([valeur, libelle]) => (
+              <button
+                key={valeur}
+                type="button"
+                role="radio"
+                aria-checked={prefs.coches === valeur}
+                className={`interrupteur ${prefs.coches === valeur ? 'actif' : ''}`}
+                onClick={() => preferences.modifier((p) => ({ ...p, coches: valeur }))}
+              >
+                {libelle}
+              </button>
+            ))}
+          </div>
+        </div>
         <Repli titre="Projet Claude des tickets" etat={projetTickets ? 'Relié ✓' : 'À relier'}>
           <ConfigurationClaude />
         </Repli>

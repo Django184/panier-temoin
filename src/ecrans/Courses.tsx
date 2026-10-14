@@ -2,9 +2,9 @@
 // selon le parcours du magasin, à cocher pendant les courses. Gardée sur
 // le téléphone, utilisable sans réseau.
 
-import { useEffect, useState } from 'react';
-import { PARCOURS, RAYON_AUTRES, parRayon } from '../lib/courses.ts';
-import { etatSynchro, liste, nouvelId, recettes, type EtatSynchro } from '../donnees/local.ts';
+import { useEffect, useRef, useState } from 'react';
+import { PARCOURS, RAYON_AUTRES, ordreArticles, parRayon, type ArticleCourses } from '../lib/courses.ts';
+import { etatSynchro, liste, nouvelId, preferences, recettes, type EtatSynchro } from '../donnees/local.ts';
 import { useSession } from '../session.tsx';
 import { chargerRecette, prendreMessageCourses, type MessageCourses } from '../lecture/chefFeta.ts';
 import { lireProjet } from '../lecture/claude.ts';
@@ -51,7 +51,6 @@ export function Courses() {
     return () => window.removeEventListener('hashchange', auLien);
   }, []);
 
-  const groupes = parRayon(articles);
   const restants = articles.filter((a) => !a.coche).length;
   const recettesDansListe = new Set(articles.map((a) => a.recetteId));
   const plusieursRecettes = new Set(articles.map((a) => a.recette).filter(Boolean)).size > 1;
@@ -158,53 +157,7 @@ export function Courses() {
           Liste vide. {projet ? 'Ouvrez Chef Feta et touchez « 🛒 Ajouter à ma liste de courses » dans une recette.' : ''}
         </p>
       ) : (
-        <div className="liste-courses">
-          {groupes.map((g) => (
-            <section key={g.rayon} className="rayon">
-              <h2 className="rayon-titre">
-                {g.rayon}
-                <span className="rayon-compte">{g.articles.filter((a) => !a.coche).length || '✓'}</span>
-              </h2>
-              <ul>
-                {g.articles.map((a) => (
-                  <li key={a.id}>
-                    {edition ? (
-                      <div className="article-edition">
-                        <input
-                          value={a.texte}
-                          aria-label={`Article : ${a.texte}`}
-                          onChange={(e) =>
-                            liste.modifier((l) => l.map((x) => (x.id === a.id ? { ...x, texte: e.target.value, manuel: x.recetteId !== null } : x)))
-                          }
-                        />
-                        <button
-                          type="button"
-                          className="bouton-icone"
-                          aria-label={`Retirer ${a.texte}`}
-                          onClick={() => liste.modifier((l) => l.filter((x) => x.id !== a.id))}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ) : (
-                      <label className={`article-courses ${a.coche ? 'article-pris' : ''}`}>
-                        <input
-                          type="checkbox"
-                          checked={a.coche}
-                          onChange={() => liste.modifier((l) => l.map((x) => (x.id === a.id ? { ...x, coche: !x.coche } : x)))}
-                        />
-                        <span className="article-texte">
-                          {a.texte}
-                          {plusieursRecettes && a.recette ? <span className="article-recette">{a.recette}</span> : null}
-                        </span>
-                      </label>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
+        <ListeArticles articles={articles} edition={edition} plusieursRecettes={plusieursRecettes} />
       )}
 
       {edition || articles.length === 0 ? <AjoutArticle /> : null}
@@ -232,6 +185,129 @@ export function Courses() {
             Vider la liste
           </button>
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+const DUREE_SORTIE = 280;
+const RANG_RAYON = new Map(PARCOURS.map((r, i) => [r, i]));
+
+function mouvementReduit(): boolean {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/**
+ * Articles par rayon. Par défaut (Réglages → Articles pris : En bas), un
+ * article coché glisse hors de son rayon et rejoint « Dans le panier »,
+ * en bas, grisé et barré ; un rayon sans article à prendre disparaît.
+ */
+function ListeArticles({ articles, edition, plusieursRecettes }: { articles: ArticleCourses[]; edition: boolean; plusieursRecettes: boolean }) {
+  const { coches } = preferences.utiliser();
+  const enBas = coches === 'en_bas' && !edition;
+  const [sortants, setSortants] = useState<Set<string>>(new Set());
+  const [entrants, setEntrants] = useState<Set<string>>(new Set());
+  const minuteries = useRef<number[]>([]);
+  useEffect(() => () => minuteries.current.forEach((m) => window.clearTimeout(m)), []);
+
+  const plusTard = (f: () => void, delai: number) => {
+    minuteries.current.push(window.setTimeout(f, delai));
+  };
+  const changerCoche = (id: string, coche: boolean) =>
+    liste.modifier((l) => l.map((x) => (x.id === id ? { ...x, coche } : x)));
+
+  const basculer = (a: ArticleCourses) => {
+    if (!enBas || mouvementReduit()) return changerCoche(a.id, !a.coche);
+    if (!a.coche) {
+      // Coché : l'article s'efface de son rayon, puis rejoint le panier.
+      if (sortants.has(a.id)) return;
+      setSortants((s) => new Set(s).add(a.id));
+      plusTard(() => {
+        changerCoche(a.id, true);
+        setSortants((s) => {
+          const n = new Set(s);
+          n.delete(a.id);
+          return n;
+        });
+      }, DUREE_SORTIE);
+    } else {
+      // Décoché depuis le panier : il réapparaît doucement dans son rayon.
+      changerCoche(a.id, false);
+      setEntrants((s) => new Set(s).add(a.id));
+      plusTard(() => {
+        setEntrants((s) => {
+          const n = new Set(s);
+          n.delete(a.id);
+          return n;
+        });
+      }, 400);
+    }
+  };
+
+  const ligne = (a: ArticleCourses) =>
+    edition ? (
+      <li key={a.id}>
+        <div className="article-edition">
+          <input
+            value={a.texte}
+            aria-label={`Article : ${a.texte}`}
+            onChange={(e) =>
+              liste.modifier((l) => l.map((x) => (x.id === a.id ? { ...x, texte: e.target.value, manuel: x.recetteId !== null } : x)))
+            }
+          />
+          <button
+            type="button"
+            className="bouton-icone"
+            aria-label={`Retirer ${a.texte}`}
+            onClick={() => liste.modifier((l) => l.filter((x) => x.id !== a.id))}
+          >
+            ×
+          </button>
+        </div>
+      </li>
+    ) : (
+      <li key={a.id} className={sortants.has(a.id) ? 'article-sortant' : entrants.has(a.id) ? 'article-entrant' : undefined}>
+        <label className={`article-courses ${a.coche || sortants.has(a.id) ? 'article-pris' : ''}`}>
+          <input type="checkbox" checked={a.coche || sortants.has(a.id)} onChange={() => basculer(a)} />
+          <span className="article-texte">
+            {a.texte}
+            {plusieursRecettes && a.recette ? <span className="article-recette">{a.recette}</span> : null}
+          </span>
+        </label>
+      </li>
+    );
+
+  const groupes = parRayon(enBas ? articles.filter((a) => !a.coche) : articles);
+  const pris = enBas
+    ? articles
+        .filter((a) => a.coche)
+        .sort((x, y) => (RANG_RAYON.get(x.rayon) ?? 99) - (RANG_RAYON.get(y.rayon) ?? 99) || ordreArticles(x, y))
+    : [];
+
+  return (
+    <div className="liste-courses">
+      {groupes.map((g) => {
+        const restants = g.articles.filter((a) => !a.coche && !sortants.has(a.id)).length;
+        // Le dernier article du rayon s'en va : le rayon s'efface avec lui.
+        const rayonSortant = enBas && restants === 0;
+        return (
+          <section key={g.rayon} className={`rayon ${rayonSortant ? 'rayon-sortant' : ''}`}>
+            <h2 className="rayon-titre">
+              {g.rayon}
+              <span className="rayon-compte">{restants || '✓'}</span>
+            </h2>
+            <ul>{g.articles.map(ligne)}</ul>
+          </section>
+        );
+      })}
+      {pris.length > 0 ? (
+        <section className="rayon rayon-panier">
+          <h2 className="rayon-titre">
+            Dans le panier
+            <span className="rayon-compte">{pris.length}</span>
+          </h2>
+          <ul>{pris.map(ligne)}</ul>
+        </section>
       ) : null}
     </div>
   );

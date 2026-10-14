@@ -131,7 +131,7 @@ function reponseSimulee(url, entetes) {
 
 const navigateur = await chromium.launch();
 
-async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true, aides = false } = {}) {
+async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true, aides = false, coches = 'en_bas' } = {}) {
   const contexte = await navigateur.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -140,7 +140,7 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
     serviceWorkers: 'block',
   });
   await contexte.addInitScript(
-    ([cle, valeurSession, valeurBrouillon, avecProjet, avecAides]) => {
+    ([cle, valeurSession, valeurBrouillon, avecProjet, avecAides, modeCoches]) => {
       if (sessionStorage.getItem('capture-pret')) return; // une seule fois par onglet
       sessionStorage.setItem('capture-pret', '1');
       if (valeurSession) window.localStorage.setItem(cle, valeurSession);
@@ -151,10 +151,14 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
       }
       window.localStorage.setItem(
         'panier-temoin:preferences',
-        JSON.stringify(avecAides ? { aides: true, aidesVues: [] } : { aides: true, aidesVues: ['ajouter', 'courses'] }),
+        JSON.stringify({
+          aides: true,
+          aidesVues: avecAides ? [] : ['ajouter', 'courses'],
+          coches: modeCoches,
+        }),
       );
     },
-    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet, aides],
+    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet, aides, coches],
   );
   // Tables partagées simulées (liste de courses, recettes), en mémoire.
   const tables = { courses_articles: new Map(), recettes: new Map() };
@@ -225,10 +229,12 @@ const LIEN_COURSES = '#/courses/' + JSON.stringify({
   a: ['Laisse les champignons bien colorer avant de remettre le poulet.', 'Variante sans viande : 400 g de tofu ferme et 250 g d’edamame.'],
   n: 'Protéines ~40 g | Glucides ~57 g | Lipides ~8 g | ~465 kcal',
 }).replaceAll('%', '%25').replaceAll(' ', '%20').replaceAll('#', '%23').replaceAll('(', '%28').replaceAll(')', '%29');
+// Coche le 1er article, puis le seul article du rayon « Viandes et poissons ».
 const cocherDeux = async (page) => {
-  const cases = page.locator('.article-courses input');
-  await cases.nth(0).check();
-  await cases.nth(4).check();
+  await page.getByLabel('250 g de champignons de Paris').check();
+  await page.waitForTimeout(400);
+  await page.getByLabel(/blancs de poulet/).check();
+  await page.waitForTimeout(400);
 };
 // Lien « Ouvrir dans Panier Témoin » tel que Claude l'écrit pour un ticket.
 const LIEN_IMPORT = '#/import/' + JSON.stringify({
@@ -237,6 +243,7 @@ const LIEN_IMPORT = '#/import/' + JSON.stringify({
 }).replaceAll(' ', '%20');
 
 await capturer('01-courses', { chemin: LIEN_COURSES.slice(2), action: cocherDeux });
+await capturer('01b-courses-a-leur-place', { chemin: LIEN_COURSES.slice(2), action: cocherDeux, coches: 'en_place' });
 await capturer('02-courses-modifier', {
   chemin: LIEN_COURSES.slice(2),
   action: async (page) => {

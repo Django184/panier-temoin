@@ -2299,3 +2299,98 @@ mark.exemple-douteux {
 .etat-erreur::before {
   background: var(--ambre);
 }
+
+/* Articles pris : sortie discrète du rayon, panier grisé en bas */
+.rayon li {
+  overflow: hidden;
+}
+
+.article-sortant {
+  animation: article-sortie 280ms cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  pointer-events: none;
+}
+
+@keyframes article-sortie {
+  0% {
+    max-height: 120px;
+    opacity: 1;
+    transform: none;
+  }
+  35% {
+    max-height: 120px;
+    opacity: 0.7;
+  }
+  100% {
+    max-height: 0;
+    opacity: 0;
+    transform: translateX(10px);
+  }
+}
+
+.article-entrant {
+  animation: article-entree 320ms ease-out;
+}
+
+@keyframes article-entree {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.rayon-sortant {
+  animation: rayon-sortie 280ms ease-in forwards;
+}
+
+@keyframes rayon-sortie {
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.rayon-panier ul {
+  background: var(--surface-2);
+}
+
+.rayon-panier .article-courses {
+  min-height: 46px;
+}
+
+.rayon-panier .article-texte {
+  font-size: 0.95rem;
+}
+
+.reglage-choix {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+  padding: 0.8rem 1rem;
+}
+
+.reglage-choix > span {
+  display: flex;
+  flex-direction: column;
+}
+
+.reglage-choix .discret {
+  font-size: 0.82rem;
+}
+
+.reglage-choix .interrupteur {
+  min-height: 34px;
+  padding: 0 0.8rem;
+  font-size: 0.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-sortant,
+  .article-entrant,
+  .rayon-sortant {
+    animation: none;
+  }
+}
