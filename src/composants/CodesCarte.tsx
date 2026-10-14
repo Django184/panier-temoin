@@ -27,23 +27,26 @@ export function CodeAztec({ texte }: { texte: string }) {
   );
 }
 
-/** Code-barres EAN-13 du numéro de carte, avec les chiffres dessous. */
+/** Code-barres EAN-13 du numéro de carte, dessiné comme dans l'app Migros
+ * (barres de garde prolongées, chiffres sous le code). */
 export function CodeBarres({ numero }: { numero: string }) {
-  const { chemin } = useMemo(() => {
+  const chemin = useMemo(() => {
+    const garde = (i: number) => i < 3 || (i >= 45 && i < 50) || i >= 92;
     let d = '';
     genererEan13(numero).forEach((barre, i) => {
-      if (barre) d += `M${i + 11} 0h1v60h-1z`;
+      if (barre) d += `M${i + 11} 0h1v${garde(i) ? 66 : 60}h-1z`;
     });
-    return { chemin: d };
+    return d;
   }, [numero]);
   const largeur = 95 + 11 + 7;
+  const groupes = `${numero.slice(0, 4)} ${numero.slice(4, 7)} ${numero.slice(7, 10)} ${numero.slice(10)}`;
 
   return (
-    <svg className="code-carte code-barres" viewBox={`0 0 ${largeur} 72`} role="img" aria-label={`Code-barres de la carte Cumulus ${numero}`} shapeRendering="crispEdges">
-      <rect width={largeur} height={72} fill="#fff" />
+    <svg className="code-carte code-barres" viewBox={`0 0 ${largeur} 82`} role="img" aria-label={`Code-barres de la carte Cumulus ${numero}`} shapeRendering="crispEdges">
+      <rect width={largeur} height={82} fill="#fff" />
       <path d={chemin} fill="#000" />
-      <text x={largeur / 2} y={70} textAnchor="middle" fontSize="9" fontFamily="ui-monospace, monospace" letterSpacing="1.5" fill="#000">
-        {numero}
+      <text x={largeur / 2} y={79} textAnchor="middle" fontSize="8" fontFamily="system-ui, sans-serif" letterSpacing="0.5" fill="#000">
+        {groupes}
       </text>
     </svg>
   );

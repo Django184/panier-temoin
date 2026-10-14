@@ -52,7 +52,16 @@ export function CarteCumulus() {
   // octet incrémenté) : une copie ancienne est refusée en caisse.
   const dateCode = carte?.modifie_le ? dateSuisse(carte.modifie_le.slice(0, 10)) : null;
   const diapos = [
-    ...(numero ? [{ nom: 'Numéro de carte', code: <CodeBarres numero={numero} />, barres: true, note: null }] : []),
+    ...(numero
+      ? [
+          {
+            nom: 'Numéro de carte',
+            code: <CodeBarres numero={numero} />,
+            barres: true,
+            note: 'Comme le code-barres de l’app Migros : les points Cumulus sont crédités, mais les bons bleus ne peuvent pas être utilisés avec ce code.',
+          },
+        ]
+      : []),
     ...(aztec
       ? [
           {
