@@ -72,7 +72,7 @@ export function CarteCumulus() {
             <CodeBarres numero={numero} />
             <p className="carte-code-legende">Cumulus</p>
           </div>
-          <p className="discret centre aide-carte">
+          <p className="discret centre aide-carte explication">
             Points Cumulus crédités comme avec l’app Migros. Les bons bleus, eux, demandent l’app Migros. Montez la luminosité si
             la caisse ne lit pas le code.
           </p>

@@ -109,7 +109,7 @@ export function FicheProduit({ id }: { id: string }) {
 
       <section className="bloc">
         <h2>Prix normal dans le temps</h2>
-        <p className="discret">Médiane par semaine, promotions exclues{parKilo ? ', prix au kilo' : ''}.</p>
+        <p className="discret explication">Médiane par semaine, promotions exclues{parKilo ? ', prix au kilo' : ''}.</p>
         <div className="filtres">
           <div className="segments" role="radiogroup" aria-label="Période">
             {(['3m', '1a', 'tout'] as Periode[]).map((p) => (
@@ -168,7 +168,7 @@ export function FicheProduit({ id }: { id: string }) {
 
       <section className="bloc">
         <h2>Selon le magasin</h2>
-        <p className="discret">
+        <p className="discret explication">
           Prix normal médian des {joursComparaison} derniers jours
           {produit?.vendu_au_poids ? ' (période courte pour un produit de saison)' : ''}.
         </p>

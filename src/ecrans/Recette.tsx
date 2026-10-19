@@ -138,7 +138,7 @@ function LectureRecette({
       <section className="bloc-recette">
         <h2>Ingrédients</h2>
         {horsListe > 0 ? (
-          <p className="discret note-ingredients">
+          <p className="discret note-ingredients explication">
             {horsListe === 1 ? 'Un ingrédient n’est pas' : `${horsListe} ingrédients ne sont pas`} dans la liste de courses.
           </p>
         ) : null}
@@ -178,7 +178,7 @@ function LectureRecette({
             ))}
           </ol>
         ) : (
-          <p className="discret">
+          <p className="discret explication">
             Chef Feta n’a pas transmis les étapes. Copiez le nouveau complément dans ses instructions (Réglages → Chef Feta), ou
             ajoutez-les avec « Modifier ».
           </p>
@@ -236,7 +236,7 @@ function EditionRecette({ recette, onFin }: { recette: TypeRecette; onFin: () =>
     <div className="edition-recette">
       <header className="entete-ecran">
         <h1>Modifier la recette</h1>
-        <p className="discret">Les quantités de la liste de courses pourront ensuite être adaptées.</p>
+        <p className="discret explication">Les quantités de la liste de courses pourront ensuite être adaptées.</p>
       </header>
 
       <label className="champ champ-large">

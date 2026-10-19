@@ -49,7 +49,7 @@ export function Paniers() {
   return (
     <div className="ecran">
       <h1>Paniers types</h1>
-      <p className="discret">
+      <p className="discret explication">
         Composez un panier de produits habituels pour suivre son coût dans le temps, promotions exclues.
       </p>
       {erreur ? <p className="erreur" role="alert">{erreur}</p> : null}

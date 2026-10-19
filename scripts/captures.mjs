@@ -131,7 +131,7 @@ function reponseSimulee(url, entetes) {
 
 const navigateur = await chromium.launch();
 
-async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true, aides = false, coches = 'en_bas' } = {}) {
+async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true, aides = false, coches = 'en_bas', sansAide = false } = {}) {
   const contexte = await navigateur.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -140,7 +140,7 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
     serviceWorkers: 'block',
   });
   await contexte.addInitScript(
-    ([cle, valeurSession, valeurBrouillon, avecProjet, avecAides, modeCoches]) => {
+    ([cle, valeurSession, valeurBrouillon, avecProjet, avecAides, modeCoches, aidesCoupees]) => {
       if (sessionStorage.getItem('capture-pret')) return; // une seule fois par onglet
       sessionStorage.setItem('capture-pret', '1');
       if (valeurSession) window.localStorage.setItem(cle, valeurSession);
@@ -152,13 +152,13 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
       window.localStorage.setItem(
         'panier-temoin:preferences',
         JSON.stringify({
-          aides: true,
+          aides: !aidesCoupees,
           aidesVues: avecAides ? [] : ['ajouter', 'courses'],
           coches: modeCoches,
         }),
       );
     },
-    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet, aides, coches],
+    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet, aides, coches, sansAide],
   );
   // Tables partagées simulées (liste de courses, recettes), en mémoire.
   const tables = { courses_articles: new Map(), recettes: new Map() };
@@ -289,6 +289,13 @@ await capturer('09-ticket-premiere-fois', { chemin: 'ajouter', projet: false, ai
 await capturer('10-retour-de-claude', { chemin: LIEN_IMPORT.slice(2) });
 await capturer('11-verification', { chemin: 'ajouter', brouillon: brouillonDemo(), action: reprendre });
 await capturer('12-prix', { chemin: 'explorer' });
+await capturer('12b-prix-hausses-par-ecart', {
+  chemin: 'explorer',
+  action: async (page) => {
+    await page.getByRole('radio', { name: /Hausse/ }).click();
+    await page.getByRole('radio', { name: 'Écart' }).click();
+  },
+});
 await capturer('13-fiche-produit', { chemin: 'produit/p1' });
 await capturer('14-reglages', { chemin: 'reglages' });
 await capturer('15-reglages-deconnecte', { connecte: false, chemin: 'reglages' });
@@ -301,5 +308,11 @@ await capturer('17-recette-sombre', {
   },
 });
 await capturer('18-prix-sombre', { theme: 'dark', chemin: 'explorer' });
+
+// Interface sans aide (Réglages → Aides désactivées).
+await capturer('19-courses-sans-aide', { chemin: LIEN_COURSES.slice(2), action: cocherDeux, sansAide: true });
+await capturer('20-prix-sans-aide', { chemin: 'explorer', sansAide: true });
+await capturer('21-carte-sans-aide', { chemin: 'carte', sansAide: true });
+await capturer('22-reglages-sans-aide', { chemin: 'reglages', sansAide: true });
 
 await navigateur.close();

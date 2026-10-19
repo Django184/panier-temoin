@@ -124,7 +124,7 @@ export function Validation({ brouillon, onChange, onEnvoye, onAbandon, apercu }:
     <div className="validation">
       <header className="entete-ecran">
         <h1>Vérifier le ticket</h1>
-        <p className="discret">
+        <p className="discret explication">
           {aRegler === 0
             ? 'Comparez avec le ticket, puis envoyez.'
             : `Touchez une ligne pour la corriger. ${aRegler} ligne${aRegler > 1 ? 's' : ''} à vérifier.`}

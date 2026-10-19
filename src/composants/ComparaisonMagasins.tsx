@@ -44,7 +44,7 @@ export function ComparaisonMagasins({ lignes }: { lignes: PrixMagasin[] }) {
           </li>
         ))}
       </ul>
-      <p className="discret comparaison-echelle">
+      <p className="discret comparaison-echelle explication">
         Échelle de {enFrancs(bas)} à {enFrancs(haut)} : prix normal médian, promotions exclues.
       </p>
     </div>

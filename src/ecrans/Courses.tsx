@@ -27,7 +27,8 @@ function EtatPartage() {
   const { session } = useSession();
   if (!session && etat === 'local') return null;
   return (
-    <span className={`etat-synchro etat-${etat}`} role="status">
+    // Sans aide, l'état n'apparaît qu'en cas de souci (hors ligne, erreur).
+    <span className={`etat-synchro etat-${etat} ${etat === 'a_jour' || etat === 'local' || etat === 'envoi' ? 'explication' : ''}`} role="status">
       {ETATS[etat]}
     </span>
   );
@@ -40,6 +41,13 @@ export function Courses() {
   const [projet, setProjet] = useState<string | null>(() => lireProjet('recettes'));
   const [edition, setEdition] = useState(false);
   const [historiqueOuvert, setHistoriqueOuvert] = useState(false);
+
+  // Le message de confirmation s'efface de lui-même.
+  useEffect(() => {
+    if (!message?.ok) return;
+    const m = window.setTimeout(() => setMessage(null), 5000);
+    return () => window.clearTimeout(m);
+  }, [message]);
 
   // Lien de Chef Feta reçu alors que la liste est déjà affichée.
   useEffect(() => {
@@ -62,7 +70,7 @@ export function Courses() {
           <h1>Courses</h1>
           <p className="discret">
             {articles.length === 0
-              ? 'Rangées selon le parcours du magasin.'
+              ? <span className="explication">Rangées selon le parcours du magasin.</span>
               : restants === 0
                 ? 'Tout est dans le panier.'
                 : `${restants} article${restants > 1 ? 's' : ''} à prendre sur ${articles.length}`}
@@ -160,7 +168,8 @@ export function Courses() {
 
       {articles.length === 0 ? (
         <p className="vide">
-          Liste vide. {projet ? 'Ouvrez Chef Feta et touchez « 🛒 Ajouter à ma liste de courses » dans une recette.' : ''}
+          Liste vide.{' '}
+          {projet ? <span className="explication">Ouvrez Chef Feta et touchez « 🛒 Ajouter à ma liste de courses » dans une recette.</span> : null}
         </p>
       ) : (
         <ListeArticles articles={articles} edition={edition} plusieursRecettes={plusieursRecettes} />

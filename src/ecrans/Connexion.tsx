@@ -49,7 +49,7 @@ export function Connexion({ raison, integre = false }: { raison?: string; integr
           {etat === 'en_cours' ? 'Connexion…' : 'Se connecter'}
         </button>
       </form>
-      <p className="discret">
+      <p className="discret explication">
         Pas de compte ? Les comptes sont réservés aux contributeurs. La consultation des prix reste ouverte à tous.
       </p>
       {integre ? null : <p className="discret">{MENTION_NON_AFFILIATION}</p>}

@@ -15,7 +15,7 @@ import { Recette } from './ecrans/Recette.tsx';
 import { CarteCumulus } from './ecrans/CarteCumulus.tsx';
 import { BandeauMiseAJour } from './composants/BandeauMiseAJour.tsx';
 import { IconeCarte, IconePanier, IconeReglages, IconeTendance, IconeTicket, IconeToque } from './composants/Icones.tsx';
-import { useRecettesDeLaListe } from './donnees/local.ts';
+import { preferences, useRecettesDeLaListe } from './donnees/local.ts';
 import { lignesAVerifier } from './api.ts';
 import { arreterSynchro, demarrerSynchro } from './donnees/synchro.ts';
 
@@ -89,6 +89,13 @@ export function App() {
   const racine = chemin[0] ?? '';
   const actif = PARENT[racine] ?? racine;
 
+  // Deux interfaces : avec aides (explications, noms des onglets) ou
+  // épurée. Les éléments marqués « explication » disparaissent sans aide.
+  const { aides } = preferences.utiliser();
+  useEffect(() => {
+    document.documentElement.dataset.aides = aides ? 'oui' : 'non';
+  }, [aides]);
+
   // Liste de courses et recettes partagées par les comptes du foyer.
   const compteId = session?.user.id ?? null;
   useEffect(() => {
@@ -129,12 +136,13 @@ export function App() {
             href={lien(o.cle)}
             className={`onglet ${actif === o.cle ? 'actif' : ''}`}
             aria-current={actif === o.cle ? 'page' : undefined}
+            aria-label={o.titre}
           >
             <span className="onglet-icone-cadre">
               {o.icone}
               {o.pastille ? <span className="pastille-onglet" aria-label="Prix à confirmer" /> : null}
             </span>
-            <span>{o.titre}</span>
+            <span className="onglet-libelle">{o.titre}</span>
           </a>
         ))}
       </nav>

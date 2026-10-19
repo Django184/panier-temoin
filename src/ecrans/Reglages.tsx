@@ -64,7 +64,7 @@ export function Reglages() {
       {aVerifier.length > 0 ? (
         <section className="bloc alerte-bloc">
           <h2>Prix à confirmer</h2>
-          <p className="discret">
+          <p className="discret explication">
             Ces prix s’écartent nettement des relevés récents et sont exclus des statistiques. Confirmez-les s’ils sont justes ;
             sinon, supprimez le ticket et envoyez-le à nouveau.
           </p>
@@ -96,7 +96,7 @@ export function Reglages() {
         <label className="reglage-interrupteur">
           <span>
             <strong>Aides</strong>
-            <span className="discret">Explications affichées sur les écrans</span>
+            <span className="discret explication">Explications, conseils et noms des onglets</span>
           </span>
           <input
             type="checkbox"
@@ -112,7 +112,7 @@ export function Reglages() {
         <div className="reglage-choix">
           <span>
             <strong>Articles pris</strong>
-            <span className="discret">Dans la liste de courses</span>
+            <span className="discret explication">Dans la liste de courses</span>
           </span>
           <div className="segments" role="radiogroup" aria-label="Articles pris">
             {(
@@ -241,7 +241,7 @@ function Installer() {
           <li>Choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».</li>
         </ol>
       )}
-      <p className="discret">Installée, l’app s’ouvre en plein écran et la carte et la liste restent utilisables sans réseau.</p>
+      <p className="discret explication">Installée, l’app s’ouvre en plein écran et la carte et la liste restent utilisables sans réseau.</p>
     </Repli>
   );
 }

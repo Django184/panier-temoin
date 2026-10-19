@@ -174,7 +174,7 @@ export function Ajouter() {
           <a className="bouton-photo" href={projet} target="_blank" rel="noopener noreferrer" onClick={() => setErreurLien(null)}>
             <IconePhoto className="icone-photo" />
             <span>Photographier le ticket</span>
-            <span className="bouton-photo-detail">dans Claude</span>
+            <span className="bouton-photo-detail explication">dans Claude</span>
           </a>
           <Aide cle="ajouter" titre="Comment ça marche">
             <ol className="etapes etapes-numerotees">
@@ -189,7 +189,7 @@ export function Ajouter() {
       ) : (
         <section className="carte-config">
           <h2>Relier le projet Claude</h2>
-          <p className="discret">Une seule fois : Claude lira ensuite chaque photo de ticket selon ces instructions.</p>
+          <p className="discret explication">Une seule fois : Claude lira ensuite chaque photo de ticket selon ces instructions.</p>
           <ConfigurationClaude onTermine={() => setProjet(lireProjet())} />
         </section>
       )}
