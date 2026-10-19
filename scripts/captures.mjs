@@ -250,6 +250,21 @@ await capturer('02-courses-modifier', {
     await page.getByRole('button', { name: 'Modifier' }).click();
   },
 });
+await capturer('02b-courses-historique', {
+  chemin: LIEN_COURSES.slice(2),
+  action: async (page) => {
+    await page.getByRole('button', { name: 'Recettes' }).click();
+  },
+});
+await capturer('04b-recette-ingredient-retire', {
+  chemin: LIEN_COURSES.slice(2),
+  action: async (page) => {
+    await page.getByRole('button', { name: 'Modifier' }).click();
+    await page.getByRole('button', { name: 'Retirer 1 oignon rouge' }).click();
+    await page.getByRole('button', { name: 'Terminé' }).click();
+    await page.getByRole('link', { name: 'Recette' }).click();
+  },
+});
 await capturer('03-courses-premiere-fois', { chemin: 'courses', projet: false, aides: true });
 await capturer('04-recette', {
   chemin: LIEN_COURSES.slice(2),
@@ -269,13 +284,6 @@ await capturer('05-recette-modifier', {
   },
 });
 await capturer('06-carte', { chemin: 'carte' });
-await capturer('07-carte-code-app', {
-  chemin: 'carte',
-  action: async (page) => {
-    await page.locator('.carrousel').evaluate((el) => el.scrollTo({ left: el.clientWidth }));
-    await page.waitForTimeout(500);
-  },
-});
 await capturer('08-ticket', { chemin: 'ajouter' });
 await capturer('09-ticket-premiere-fois', { chemin: 'ajouter', projet: false, aides: true });
 await capturer('10-retour-de-claude', { chemin: LIEN_IMPORT.slice(2) });

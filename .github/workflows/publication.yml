@@ -76,7 +76,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Codes Aztec et EAN-13 relus par un décodeur indépendant
+      - name: Codes-barres EAN-13 relus par un décodeur indépendant
         run: |
           node scripts/codes_de_test.ts codes-test
           pip install --quiet zxing-cpp pillow

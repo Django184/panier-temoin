@@ -44,6 +44,14 @@ function creerMagasin<T>(cle: string | null, defaut: T, valider: (v: unknown) =>
     return () => ecouteurs.delete(f);
   };
   const lireValeur = () => valeur;
+  // Une autre fenêtre de l'app (ouverte par un lien) a écrit : on se met à jour.
+  if (cle && typeof window !== 'undefined') {
+    window.addEventListener('storage', (e) => {
+      if (e.key !== cle) return;
+      valeur = valider(e.newValue ? lire<unknown>(cle, defaut) : defaut);
+      ecouteurs.forEach((f) => f());
+    });
+  }
   const changer = (nouvelle: T) => {
     valeur = nouvelle;
     if (cle) ecrire(cle, valeur);

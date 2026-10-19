@@ -44,7 +44,7 @@ GitHub : Pages sert l'app ; Actions teste, construit, publie et maintient Supaba
 | `src/lecture/` | Adresse du projet Claude, arrivée des liens d’import |
 | `src/ecrans/`, `src/composants/` | Interface |
 | `.github/workflows/` | Tests, build, publication, maintien de Supabase |
-| `src/lib/aztec.ts`, `src/lib/ean13.ts` | Carte Cumulus : code Aztec (comme Google Wallet) et code-barres EAN-13, relus par zxing-cpp en intégration continue |
+| `src/lib/ean13.ts` | Carte Cumulus : code-barres EAN-13 du numéro de carte, relu par zxing-cpp en intégration continue |
 | `src/lib/courses.ts` | Liste de courses : lecture des recettes de Chef Feta, parcours du magasin |
 | `docs/checklist-telephone.md` | Tests à faire sur iPhone et Android |
 
@@ -54,7 +54,7 @@ GitHub : Pages sert l'app ; Actions teste, construit, publie et maintient Supaba
 | --- | --- |
 | Courses | Liste de courses rangée selon le parcours du magasin, à cocher. Bouton Chef Feta, historique des recettes, mode « Modifier ». |
 | Recette | Affiché quand une recette est dans la liste : ingrédients, étapes, astuces, portions ; modification à la main, puis adaptation de la liste. |
-| Carte | Carte Cumulus du foyer : code Aztec (comme Google Wallet) ou code-barres, d’un balayage. |
+| Carte | Carte Cumulus du foyer : code-barres du numéro de carte, identique à celui de l’app Migros (points crédités ; bons bleus via l’app Migros). |
 | Ticket | Bouton « Photographier le ticket » (projet Claude), puis vérification et envoi. |
 | Prix | Recherche, favoris, derniers achats avec l’écart depuis l’achat précédent ; fiches produit et paniers types. |
 | Réglages | Aides activables, projets Claude, prix à confirmer, tickets envoyés, installation, confidentialité, compte. |

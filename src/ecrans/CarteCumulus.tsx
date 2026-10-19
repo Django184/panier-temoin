@@ -1,13 +1,12 @@
-// Carte Cumulus du foyer, à présenter à la caisse : code Aztec (comme
-// dans Google Wallet et l'app Migros) ou code-barres du numéro de carte.
+// Carte Cumulus du foyer, à présenter à la caisse : code-barres EAN-13 du
+// numéro de carte, identique à celui de l'app Migros (vérifié en caisse).
 // Gardée dans la base (comptes connectés seulement) et copiée sur le
 // téléphone pour s'afficher même sans réseau au magasin.
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { carteLocale, enregistrerCarteCumulus, lireCarteCumulus, supprimerCarteCumulus, type Carte } from '../api.ts';
-import { CodeAztec, CodeBarres } from '../composants/CodesCarte.tsx';
+import { CodeBarres } from '../composants/CodesCarte.tsx';
 import { ean13Valide } from '../lib/ean13.ts';
-import { dateSuisse } from '../composants/Champs.tsx';
 
 /** Garde l'écran allumé tant que la carte est affichée (si le navigateur le permet). */
 function useEcranAllume(actif: boolean) {
@@ -42,39 +41,10 @@ export function CarteCumulus() {
   const [chargement, setChargement] = useState(carte === null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [modifier, setModifier] = useState(false);
-  const [diapo, setDiapo] = useState(0);
-  const carrousel = useRef<HTMLDivElement>(null);
 
-  const aztec = carte?.code ?? null;
   const numero = carte?.numero && ean13Valide(carte.numero) ? carte.numero : null;
-  // Le code-barres du numéro de carte ne change jamais : il passe en
-  // premier. Le code Aztec de l'app Migros change régulièrement (dernier
-  // octet incrémenté) : une copie ancienne est refusée en caisse.
-  const dateCode = carte?.modifie_le ? dateSuisse(carte.modifie_le.slice(0, 10)) : null;
-  const diapos = [
-    ...(numero
-      ? [
-          {
-            nom: 'Numéro de carte',
-            code: <CodeBarres numero={numero} />,
-            barres: true,
-            note: 'Comme le code-barres de l’app Migros : les points Cumulus sont crédités, mais les bons bleus ne peuvent pas être utilisés avec ce code.',
-          },
-        ]
-      : []),
-    ...(aztec
-      ? [
-          {
-            nom: 'Code de l’app',
-            code: <CodeAztec texte={aztec} />,
-            barres: false,
-            note: `Copie du code de l’app Migros${dateCode ? ` du ${dateCode}` : ''}. Il change régulièrement : s’il est refusé, utilisez le numéro de carte ou mettez-le à jour.`,
-          },
-        ]
-      : []),
-  ];
 
-  useEcranAllume(diapos.length > 0 && !modifier);
+  useEcranAllume(numero !== null && !modifier);
 
   useEffect(() => {
     lireCarteCumulus()
@@ -86,11 +56,6 @@ export function CarteCumulus() {
       .finally(() => setChargement(false));
   }, []);
 
-  const allerA = (i: number) => {
-    const el = carrousel.current;
-    if (el) el.scrollTo({ left: i * el.clientWidth, behavior: 'smooth' });
-  };
-
   return (
     <div className="ecran ecran-carte">
       <h1>Carte Cumulus</h1>
@@ -101,36 +66,15 @@ export function CarteCumulus() {
         </p>
       ) : null}
 
-      {diapos.length > 0 && !modifier ? (
+      {numero && !modifier ? (
         <>
-          <div
-            ref={carrousel}
-            className="carrousel"
-            onScroll={(e) => {
-              const el = e.currentTarget;
-              setDiapo(Math.round(el.scrollLeft / Math.max(1, el.clientWidth)));
-            }}
-          >
-            {diapos.map((d) => (
-              <div key={d.nom} className="diapo" aria-label={d.nom}>
-                <div className={`carte-code ${d.barres ? 'carte-code-barres' : ''}`}>
-                  {d.code}
-                  <p className="carte-code-legende">Cumulus</p>
-                </div>
-              </div>
-            ))}
+          <div className="carte-code carte-code-barres carte-seule">
+            <CodeBarres numero={numero} />
+            <p className="carte-code-legende">Cumulus</p>
           </div>
-          {diapos.length > 1 ? (
-            <div className="points-carrousel" role="tablist" aria-label="Format du code">
-              {diapos.map((d, i) => (
-                <button key={d.nom} type="button" role="tab" aria-selected={diapo === i} className={diapo === i ? 'actif' : ''} onClick={() => allerA(i)}>
-                  {d.nom}
-                </button>
-              ))}
-            </div>
-          ) : null}
           <p className="discret centre aide-carte">
-            {diapos[diapo]?.note ?? `${diapos.length > 1 ? 'Balayez pour changer de format. ' : ''}Montez la luminosité si la caisse ne lit pas le code.`}
+            Points Cumulus crédités comme avec l’app Migros. Les bons bleus, eux, demandent l’app Migros. Montez la luminosité si
+            la caisse ne lit pas le code.
           </p>
           <button type="button" className="bouton-lien lien-bas" onClick={() => setModifier(true)}>
             Modifier la carte
@@ -177,7 +121,6 @@ function FormulaireCarte({
   onAnnule?: () => void;
   onSupprime?: () => void;
 }) {
-  const [code, setCode] = useState(carte?.code ?? '');
   const [numero, setNumero] = useState(carte?.numero ?? '');
   const [erreur, setErreur] = useState<string | null>(null);
   const numeroPropre = numero.replace(/\s/g, '');
@@ -187,7 +130,7 @@ function FormulaireCarte({
       setErreur('Le numéro de carte doit compter 13 chiffres (par exemple 2099…), sans erreur de frappe.');
       return;
     }
-    const nouvelle = { code: code.trim() || null, numero: numeroPropre || null };
+    const nouvelle = { code: null, numero: numeroPropre || null };
     try {
       await enregistrerCarteCumulus(nouvelle);
       onEnregistre(nouvelle);
@@ -202,16 +145,12 @@ function FormulaireCarte({
         <span className="champ-etiquette">Numéro de carte (13 chiffres, au dos de la carte ou partagé depuis l’app Migros)</span>
         <input value={numero} onChange={(e) => setNumero(e.target.value)} inputMode="numeric" autoComplete="off" />
       </label>
-      <label className="champ champ-large">
-        <span className="champ-etiquette">Code de l’app (facultatif, partagé depuis la carte Cumulus de Google Wallet ; il change régulièrement)</span>
-        <input value={code} onChange={(e) => setCode(e.target.value)} autoComplete="off" spellCheck={false} />
-      </label>
       {erreur ? (
         <p className="erreur" role="alert">
           {erreur}
         </p>
       ) : null}
-      <button type="button" className="bouton-principal" disabled={!code.trim() && !numeroPropre} onClick={() => void enregistrer()}>
+      <button type="button" className="bouton-principal" disabled={!numeroPropre} onClick={() => void enregistrer()}>
         Enregistrer la carte
       </button>
       {onAnnule || onSupprime ? (

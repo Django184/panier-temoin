@@ -12,17 +12,19 @@ Appareil : ____________________  Système : ____________________  Date : _______
 
 ## 2. Carte Cumulus
 
-- [ ] Onglet Carte : le code Aztec s’affiche ; un balayage vers la gauche montre le code-barres, et inversement.
+- [ ] Onglet Carte : le code-barres du numéro de carte s’affiche, avec le numéro dessous.
 - [ ] L’écran ne s’éteint pas tant que la carte est affichée.
 - [ ] En mode avion, la carte s’affiche encore.
-- [ ] À la caisse Migros, le code est lu (noter lequel : Aztec / code-barres).
+- [ ] À la caisse Migros, le code-barres est lu et les points Cumulus sont crédités.
 
 ## 3. Courses et recettes
 
 - [ ] Première ouverture : « Relier Chef Feta » et l’aide « Comment ça marche » s’affichent ; « Compris » masque l’aide.
 - [ ] Dans Chef Feta, le lien « 🛒 Ajouter à ma liste de courses » ouvre l’app sur Courses, liste remplie, et fait apparaître l’onglet Recette.
 - [ ] Cocher un article le barre ; « Modifier » permet de changer une quantité, retirer un article, en ajouter un.
-- [ ] « Recettes » liste les recettes reçues ; en toucher une la remet dans la liste.
+- [ ] « Recettes » liste les recettes reçues ; toucher une recette la met dans la liste ou l’en retire (case cochée).
+- [ ] Toucher deux fois le même lien de Chef Feta ne crée ni recette ni article en double.
+- [ ] Un article retiré de la liste (Modifier → ×) apparaît grisé dans la recette, avec « + Liste » pour le remettre.
 - [ ] Onglet Recette : − / + change les quantités affichées ; le bandeau « Adapter la liste » met la liste à jour.
 - [ ] « Modifier » la recette : changer un ingrédient, enregistrer ; la liste propose l’adaptation.
 

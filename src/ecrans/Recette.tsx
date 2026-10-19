@@ -6,7 +6,8 @@ import { Fragment, useState, type ReactNode } from 'react';
 import { ecartsAvecRecette, PARCOURS, rayonDuParcours } from '../lib/courses.ts';
 import { adapterQuantite, facteurPortions, type Ingredient, type Recette as TypeRecette } from '../lib/recettes.ts';
 import { liste, recetteActive, useRecettesDeLaListe } from '../donnees/local.ts';
-import { chargerRecette, enregistrerRecette, supprimerRecette } from '../lecture/chefFeta.ts';
+import { adapterListe, enregistrerEdition, enregistrerRecette, remettreIngredient, supprimerRecette } from '../lecture/chefFeta.ts';
+import type { ArticleCourses } from '../lib/courses.ts';
 import { IconeCrayon } from '../composants/Icones.tsx';
 import { lien } from '../routeur.ts';
 
@@ -60,18 +61,35 @@ export function Recette() {
       {edition ? (
         <EditionRecette key={recette.id} recette={recette} onFin={() => setEdition(false)} />
       ) : (
-        <LectureRecette recette={recette} ecarts={ecartsAvecRecette(articles, recette)} onModifier={() => setEdition(true)} />
+        <LectureRecette
+          recette={recette}
+          articles={articles.filter((a) => a.recetteId === recette.id)}
+          ecarts={ecartsAvecRecette(articles, recette)}
+          onModifier={() => setEdition(true)}
+        />
       )}
     </div>
   );
 }
 
-function LectureRecette({ recette, ecarts, onModifier }: { recette: TypeRecette; ecarts: number; onModifier: () => void }) {
+function LectureRecette({
+  recette,
+  articles,
+  ecarts,
+  onModifier,
+}: {
+  recette: TypeRecette;
+  articles: ArticleCourses[];
+  ecarts: number;
+  onModifier: () => void;
+}) {
   const facteur = facteurPortions(recette);
+  const parRang = new Map(articles.map((a) => [a.ingredient, a]));
   const parRayons = PARCOURS.map((rayon) => ({
     rayon,
-    ingredients: recette.ingredients.filter((i) => rayonDuParcours(i.rayon) === rayon),
+    ingredients: recette.ingredients.map((ing, rang) => ({ ing, rang })).filter(({ ing }) => rayonDuParcours(ing.rayon) === rayon),
   })).filter((g) => g.ingredients.length > 0);
+  const horsListe = recette.ingredients.length - recette.ingredients.filter((_, rang) => parRang.has(rang)).length;
 
   const changerPortions = (delta: number) => {
     const actuelles = recette.portions ?? recette.personnes ?? 1;
@@ -111,7 +129,7 @@ function LectureRecette({ recette, ecarts, onModifier }: { recette: TypeRecette;
           <p>
             La liste de courses ne suit plus la recette : {ecarts} article{ecarts > 1 ? 's changent' : ' change'}.
           </p>
-          <button type="button" className="bouton-principal" onClick={() => chargerRecette(recette)}>
+          <button type="button" className="bouton-principal" onClick={() => adapterListe(recette)}>
             Adapter la liste
           </button>
         </div>
@@ -119,13 +137,33 @@ function LectureRecette({ recette, ecarts, onModifier }: { recette: TypeRecette;
 
       <section className="bloc-recette">
         <h2>Ingrédients</h2>
+        {horsListe > 0 ? (
+          <p className="discret note-ingredients">
+            {horsListe === 1 ? 'Un ingrédient n’est pas' : `${horsListe} ingrédients ne sont pas`} dans la liste de courses.
+          </p>
+        ) : null}
         {parRayons.map((g) => (
           <div key={g.rayon} className="ingredients-rayon">
             <h3 className="rayon-titre">{g.rayon}</h3>
             <ul className="ingredients">
-              {g.ingredients.map((ing, i) => (
-                <li key={i}>{adapterQuantite(ing.texte, facteur)}</li>
-              ))}
+              {g.ingredients.map(({ ing, rang }) => {
+                const article = parRang.get(rang);
+                return (
+                  <li key={rang} className={article ? (article.coche ? 'ingredient-pris' : undefined) : 'ingredient-hors-liste'}>
+                    <span>{adapterQuantite(ing.texte, facteur)}</span>
+                    {article ? null : (
+                      <button
+                        type="button"
+                        className="bouton-remettre"
+                        aria-label={`Remettre ${ing.texte} dans la liste de courses`}
+                        onClick={() => remettreIngredient(recette, rang)}
+                      >
+                        + Liste
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ))}
@@ -170,6 +208,8 @@ function LectureRecette({ recette, ecarts, onModifier }: { recette: TypeRecette;
 
 function EditionRecette({ recette, onFin }: { recette: TypeRecette; onFin: () => void }) {
   const [brouillon, setBrouillon] = useState<TypeRecette>(recette);
+  // Rang d'origine de chaque ingrédient (null : ajouté), pour que la liste suive.
+  const [origines, setOrigines] = useState<Array<number | null>>(() => recette.ingredients.map((_, i) => i));
   const maj = (patch: Partial<TypeRecette>) => setBrouillon((b) => ({ ...b, ...patch }));
   const majIngredient = (i: number, patch: Partial<Ingredient>) =>
     maj({ ingredients: brouillon.ingredients.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
@@ -178,16 +218,17 @@ function EditionRecette({ recette, onFin }: { recette: TypeRecette; onFin: () =>
 
   const enregistrer = () => {
     const personnes = brouillon.personnes && brouillon.personnes > 0 ? brouillon.personnes : null;
-    enregistrerRecette({
+    const gardes = brouillon.ingredients.map((ing, i) => ({ ing, origine: origines[i] ?? null })).filter(({ ing }) => ing.texte.trim());
+    enregistrerEdition({
       ...brouillon,
       titre: brouillon.titre.trim() || recette.titre,
       personnes,
       portions: personnes ? (brouillon.portions ?? personnes) : null,
-      ingredients: brouillon.ingredients.filter((i) => i.texte.trim()),
+      ingredients: gardes.map(({ ing }) => ing),
       etapes: brouillon.etapes.filter((e) => e.trim()),
       astuces: brouillon.astuces.filter((a) => a.trim()),
       modifieLe: new Date().toISOString(),
-    });
+    }, gardes.map(({ origine }) => origine));
     onFin();
   };
 
@@ -236,13 +277,23 @@ function EditionRecette({ recette, onFin }: { recette: TypeRecette; onFin: () =>
               type="button"
               className="bouton-icone"
               aria-label={`Retirer l’ingrédient ${i + 1}`}
-              onClick={() => maj({ ingredients: brouillon.ingredients.filter((_, j) => j !== i) })}
+              onClick={() => {
+                maj({ ingredients: brouillon.ingredients.filter((_, j) => j !== i) });
+                setOrigines((o) => o.filter((_, j) => j !== i));
+              }}
             >
               ×
             </button>
           </div>
         ))}
-        <button type="button" className="bouton-ajout" onClick={() => maj({ ingredients: [...brouillon.ingredients, { rayon: 'Autres', texte: '' }] })}>
+        <button
+          type="button"
+          className="bouton-ajout"
+          onClick={() => {
+            maj({ ingredients: [...brouillon.ingredients, { rayon: 'Autres', texte: '' }] });
+            setOrigines((o) => [...o, null]);
+          }}
+        >
           + Ingrédient
         </button>
       </fieldset>

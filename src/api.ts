@@ -68,10 +68,10 @@ export async function deconnecter(): Promise<void> {
 // Carte Cumulus du foyer (comptes connectés seulement)
 // ---------------------------------------------------------------------
 
-// Deux formes de la carte : « code » (texte du code Aztec de Google
-// Wallet) et « numero » (13 chiffres, code-barres EAN-13). Copie locale,
-// pour afficher la carte au magasin même sans réseau ; effacée à la
-// déconnexion.
+// « numero » : 13 chiffres de la carte (code-barres EAN-13), seule forme
+// affichée ; « code » (texte de l'ancien code Aztec) n'est plus utilisé.
+// Copie locale, pour afficher la carte au magasin même sans réseau ;
+// effacée à la déconnexion.
 export interface Carte {
   code: string | null;
   numero: string | null;

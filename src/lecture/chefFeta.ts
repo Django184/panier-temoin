@@ -1,7 +1,7 @@
 // Recettes de Chef Feta : arrivée du lien « Ajouter à ma liste de
 // courses », reprise d'une recette de l'historique, enregistrement.
 
-import { majListePourRecette, rayonDuParcours } from '../lib/courses.ts';
+import { ajouterIngredient, cleTitre, dedoublonner, majListePourRecette, rayonDuParcours } from '../lib/courses.ts';
 import { ErreurRecette, recetteDepuisLien, type Recette } from '../lib/recettes.ts';
 import { liste, nouvelId, recetteActive, recettes } from '../donnees/local.ts';
 
@@ -16,9 +16,55 @@ export function chargerRecette(recette: Recette): void {
   recetteActive.modifier(() => recette.id);
 }
 
+/** Retire tous les articles d'une recette de la liste (la recette reste dans l'historique). */
+export function retirerRecetteDeLaListe(id: string): void {
+  liste.modifier((l) => l.filter((a) => a.recetteId !== id));
+}
+
+/** Adapte les quantités des articles présents, sans remettre ceux qui ont été retirés. */
+export function adapterListe(recette: Recette): void {
+  liste.modifier((l) => majListePourRecette(l, recette, nouvelId, { seulementPresents: true }));
+}
+
+/** Remet un ingrédient de la recette dans la liste. */
+export function remettreIngredient(recette: Recette, rang: number): void {
+  liste.modifier((l) => ajouterIngredient(l, recette, rang, nouvelId));
+}
+
 /** Enregistre une recette modifiée (historique), sans toucher à la liste. */
 export function enregistrerRecette(recette: Recette): void {
   recettes.modifier((tout) => tout.map((r) => (r.id === recette.id ? recette : r)));
+}
+
+/**
+ * Enregistre une recette modifiée à la main. `origines[i]` est l'ancien
+ * rang de l'ingrédient i (null s'il vient d'être ajouté) : les articles de
+ * la liste suivent leur ingrédient, ceux d'un ingrédient supprimé sont
+ * retirés, et un ingrédient ajouté rejoint la liste si la recette y est.
+ */
+export function enregistrerEdition(recette: Recette, origines: Array<number | null>): void {
+  enregistrerRecette(recette);
+  liste.modifier((l) => {
+    const dansLaListe = l.some((a) => a.recetteId === recette.id);
+    let suite = l.flatMap((a) => {
+      if (a.recetteId !== recette.id || a.ingredient === null) return [a];
+      const rang = origines.indexOf(a.ingredient);
+      return rang === -1 ? [] : [{ ...a, ingredient: rang, recette: recette.titre }];
+    });
+    if (dansLaListe) {
+      origines.forEach((origine, rang) => {
+        if (origine === null) suite = ajouterIngredient(suite, recette, rang, nouvelId);
+      });
+    }
+    return suite;
+  });
+}
+
+/** Retire les doublons de recettes et d'articles (après un import ou une relecture). */
+export function dedoublonnerTout(): void {
+  const r = dedoublonner(recettes.lire(), liste.lire());
+  if (r.recettes.length !== recettes.lire().length) recettes.modifier(() => r.recettes);
+  if (r.liste.length !== liste.lire().length || r.liste.some((a, i) => a !== liste.lire()[i])) liste.modifier(() => r.liste);
 }
 
 export function supprimerRecette(id: string): void {
@@ -32,7 +78,7 @@ export function importerRecette(lien: string): MessageCourses {
     const lue = recetteDepuisLien(lien);
     lue.ingredients = lue.ingredients.map((i) => ({ ...i, rayon: rayonDuParcours(i.rayon) }));
     // Une recette de même nom remplace l'ancienne (pas de doublon dans l'historique).
-    const existante = recettes.lire().find((r) => r.titre.toLowerCase() === lue.titre.toLowerCase());
+    const existante = recettes.lire().find((r) => cleTitre(r.titre) === cleTitre(lue.titre));
     const recette: Recette = {
       ...lue,
       id: existante?.id ?? nouvelId(),
@@ -42,6 +88,7 @@ export function importerRecette(lien: string): MessageCourses {
     };
     recettes.modifier((tout) => [recette, ...tout.filter((r) => r.id !== recette.id)].slice(0, HISTORIQUE_MAX));
     chargerRecette(recette);
+    dedoublonnerTout();
     const n = recette.ingredients.length;
     return { ok: true, message: `${recette.titre} : ${n} article${n > 1 ? 's' : ''} dans la liste.` };
   } catch (e) {

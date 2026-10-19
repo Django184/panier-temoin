@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { PARCOURS, RAYON_AUTRES, ordreArticles, parRayon, type ArticleCourses } from '../lib/courses.ts';
 import { etatSynchro, liste, nouvelId, preferences, recettes, type EtatSynchro } from '../donnees/local.ts';
 import { useSession } from '../session.tsx';
-import { chargerRecette, prendreMessageCourses, type MessageCourses } from '../lecture/chefFeta.ts';
+import { chargerRecette, prendreMessageCourses, retirerRecetteDeLaListe, type MessageCourses } from '../lecture/chefFeta.ts';
 import { lireProjet } from '../lecture/claude.ts';
 import { Aide } from '../composants/Aide.tsx';
 import { ConfigurationChefFeta } from '../composants/ConfigurationChefFeta.tsx';
@@ -132,19 +132,25 @@ export function Courses() {
               <li key={r.id}>
                 <button
                   type="button"
-                  className="historique-recette"
+                  role="checkbox"
+                  aria-checked={presente}
+                  className={`historique-recette ${presente ? 'present' : ''}`}
                   onClick={() => {
-                    chargerRecette(r);
-                    setHistoriqueOuvert(false);
-                    setMessage({ ok: true, message: `${r.titre} : ${r.ingredients.length} articles dans la liste.` });
+                    if (presente) {
+                      retirerRecetteDeLaListe(r.id);
+                      setMessage({ ok: true, message: `${r.titre} : retirée de la liste.` });
+                    } else {
+                      chargerRecette(r);
+                      setMessage({ ok: true, message: `${r.titre} : ${r.ingredients.length} articles dans la liste.` });
+                    }
                   }}
                 >
+                  <span className="historique-case" aria-hidden="true" />
                   <span className="historique-titre">{r.titre}</span>
                   <span className="historique-detail">
                     {r.portions ? `${r.portions} pers. · ` : ''}
                     {r.ingredients.length} ingrédients · {dateSuisse(r.importeLe.slice(0, 10))}
                   </span>
-                  <span className={`historique-etat ${presente ? 'present' : ''}`}>{presente ? 'Dans la liste' : 'Ajouter'}</span>
                 </button>
               </li>
             );

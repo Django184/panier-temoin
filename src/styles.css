@@ -1597,8 +1597,9 @@ mark.exemple-douteux {
 
 .historique-recette {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.1rem 0.75rem;
+  grid-template-columns: auto 1fr;
+  gap: 0.1rem 0.8rem;
+  align-items: center;
   width: 100%;
   padding: 0.75rem 0.9rem;
   border: 0;
@@ -1609,27 +1610,30 @@ mark.exemple-douteux {
   cursor: pointer;
 }
 
+.historique-case {
+  grid-row: 1 / span 2;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--trait-fort);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.historique-recette.present .historique-case {
+  border-color: var(--vert);
+  background: var(--vert)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E")
+    center / 16px no-repeat;
+}
+
 .historique-titre {
   font-weight: 650;
 }
 
 .historique-detail {
-  grid-column: 1;
+  grid-column: 2;
   font-size: 0.8rem;
   color: var(--encre-2);
-}
-
-.historique-etat {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-  font-size: 0.8rem;
-  font-weight: 650;
-  color: var(--stylo);
-}
-
-.historique-etat.present {
-  color: var(--vert);
 }
 
 .article-edition {
@@ -2393,4 +2397,45 @@ mark.exemple-douteux {
   .rayon-sortant {
     animation: none;
   }
+}
+
+/* Recette : ingrédients absents de la liste de courses */
+.ingredients li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.ingredient-hors-liste > span {
+  color: var(--encre-2);
+  opacity: 0.75;
+}
+
+.ingredient-hors-liste::before {
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1.5px var(--encre-2);
+}
+
+.ingredient-pris > span {
+  color: var(--encre-2);
+}
+
+.bouton-remettre {
+  flex: none;
+  min-height: 30px;
+  padding: 0.1rem 0.65rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--stylo);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.note-ingredients {
+  margin: -0.3rem 0 0.6rem;
+  font-size: 0.85rem;
 }

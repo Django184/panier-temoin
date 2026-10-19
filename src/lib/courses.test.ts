@@ -3,7 +3,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ADRESSE_RECETTE, adapterQuantite, quantiteDe, recetteDepuisLien, type Recette } from './recettes.ts';
-import { ecartsAvecRecette, majListePourRecette, parRayon, rayonDuParcours, RAYON_PLACARD, type ArticleCourses } from './courses.ts';
+import {
+  ajouterIngredient,
+  dedoublonner,
+  ecartsAvecRecette,
+  majListePourRecette,
+  parRayon,
+  rayonDuParcours,
+  RAYON_PLACARD,
+  type ArticleCourses,
+} from './courses.ts';
 
 const OBJET = {
   r: 'Poulet sauté façon teriyaki (riz, champignons)',
@@ -125,4 +134,40 @@ test('liste : articles de première version remplacés au réimport', () => {
   assert.equal(liste.length, 8);
   assert.ok(liste.some((a) => a.texte === 'Lait'));
   assert.ok(!liste.some((a) => a.id === 'v1'));
+});
+
+test('article retiré : ni écart, ni retour à l’adaptation ; « + Liste » le remet', () => {
+  let n = 0;
+  const id = () => `b${++n}`;
+  const r = recette();
+  // L'ail (rang 2) est retiré de la liste.
+  let liste: ArticleCourses[] = majListePourRecette([], r, id).filter((a) => a.ingredient !== 2);
+  assert.equal(ecartsAvecRecette(liste, r), 0, 'un article absent n’est pas un écart');
+
+  const deux = { ...r, portions: 2 };
+  liste = majListePourRecette(liste, deux, id, { seulementPresents: true });
+  assert.equal(liste.length, 6);
+  assert.ok(!liste.some((a) => a.ingredient === 2), 'l’ail ne revient pas');
+  assert.equal(liste.find((a) => a.ingredient === 0)?.texte, '125 g de champignons de Paris');
+
+  liste = ajouterIngredient(liste, deux, 2, id);
+  assert.equal(liste.find((a) => a.ingredient === 2)?.texte, "1 à 1,5 gousses d'ail");
+  assert.equal(ajouterIngredient(liste, deux, 2, id), liste, 'pas de double');
+});
+
+test('doublons : même recette importée deux fois (deux fenêtres ou téléphones)', () => {
+  const a = { ...recette(), id: 'r1', importeLe: '2026-10-15T10:00:00Z' };
+  const b = { ...recette(), id: 'r2', titre: 'POULET sauté façon  teriyaki (riz, champignons)', importeLe: '2026-10-16T10:00:00Z' };
+  let n = 0;
+  const id = () => `c${++n}`;
+  const liste = majListePourRecette(majListePourRecette([], a, id), b, id);
+  assert.equal(liste.length, 14);
+
+  const r = dedoublonner([a, b], liste);
+  assert.deepEqual(r.recettes.map((x) => x.id), ['r2'], 'la plus récente est gardée');
+  assert.equal(r.liste.length, 7, 'un article par ingrédient');
+  assert.ok(r.liste.every((x) => x.recetteId === 'r2'));
+
+  const encore = dedoublonner(r.recettes, r.liste);
+  assert.equal(encore.liste.length, 7);
 });

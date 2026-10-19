@@ -14,6 +14,7 @@ import { ordreArticles, type ArticleCourses } from '../lib/courses.ts';
 import type { Recette } from '../lib/recettes.ts';
 import { differences, fusionner, memesListes, type Attente } from './fusion.ts';
 import { etatSynchro, liste, recettes } from './local.ts';
+import { dedoublonnerTout } from '../lecture/chefFeta.ts';
 
 type Table = 'courses_articles' | 'recettes';
 interface Operation {
@@ -301,6 +302,8 @@ async function relire(): Promise<void> {
 
   const recs = fusionner(recettes.lire(), (r.data as LigneRecette[]).map(versRecette), attentePour('recettes'), memeRecette, ordreRecettes);
   if (!memesListes(recs, recettes.lire(), memeRecette)) recettes.remplacer(recs);
+  // Deux téléphones (ou deux fenêtres) ont pu importer la même recette.
+  dedoublonnerTout();
   etatApresEnvoi();
 }
 
