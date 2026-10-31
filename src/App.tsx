@@ -91,10 +91,13 @@ export function App() {
 
   // Deux interfaces : avec aides (explications, noms des onglets) ou
   // épurée. Les éléments marqués « explication » disparaissent sans aide.
-  const { aides } = preferences.utiliser();
+  const { aides, couleur } = preferences.utiliser();
   useEffect(() => {
     document.documentElement.dataset.aides = aides ? 'oui' : 'non';
   }, [aides]);
+  useEffect(() => {
+    document.documentElement.dataset.couleur = couleur;
+  }, [couleur]);
 
   // Liste de courses et recettes partagées par les comptes du foyer.
   const compteId = session?.user.id ?? null;

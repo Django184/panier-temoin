@@ -19,7 +19,7 @@ import { ConfigurationClaude } from '../composants/ConfigurationClaude.tsx';
 import { ConfigurationChefFeta } from '../composants/ConfigurationChefFeta.tsx';
 import { Connexion } from './Connexion.tsx';
 import { lireProjet } from '../lecture/claude.ts';
-import { preferences } from '../donnees/local.ts';
+import { COULEURS, preferences } from '../donnees/local.ts';
 
 /** Section repliable avec un état résumé à droite du titre. */
 function Repli({ titre, etat, ouvert = false, children }: { titre: string; etat?: ReactNode; ouvert?: boolean; children: ReactNode }) {
@@ -131,6 +131,27 @@ export function Reglages() {
               >
                 {libelle}
               </button>
+            ))}
+          </div>
+        </div>
+        <div className="reglage-choix">
+          <span>
+            <strong>Couleur</strong>
+            <span className="discret explication">Barres, liens et éléments actifs</span>
+          </span>
+          <div className="pastilles-couleur" role="radiogroup" aria-label="Couleur">
+            {COULEURS.map(([valeur, libelle]) => (
+              <button
+                key={valeur}
+                type="button"
+                role="radio"
+                aria-checked={prefs.couleur === valeur}
+                aria-label={libelle}
+                title={libelle}
+                data-couleur={valeur}
+                className="pastille-couleur"
+                onClick={() => preferences.modifier((p) => ({ ...p, couleur: valeur }))}
+              />
             ))}
           </div>
         </div>

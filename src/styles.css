@@ -49,6 +49,59 @@
   }
 }
 
+/* Couleur d'accent choisie dans Réglages (bleu par défaut, ci-dessus).
+   Seuls --stylo et --stylo-fond changent ; vert et rouge « sémantiques »
+   (baisse, hausse, erreurs) restent les mêmes. */
+.pastille-couleur[data-couleur='bleu'] {
+  --stylo: #2b48c9;
+}
+:root[data-couleur='vert'],
+.pastille-couleur[data-couleur='vert'] {
+  --stylo: #1d7a46;
+  --stylo-fond: #e3f4ea;
+}
+:root[data-couleur='rouge'],
+.pastille-couleur[data-couleur='rouge'] {
+  --stylo: #c4302b;
+  --stylo-fond: #fce8e7;
+}
+:root[data-couleur='rose'],
+.pastille-couleur[data-couleur='rose'] {
+  --stylo: #b92c64;
+  --stylo-fond: #fce8f0;
+}
+:root[data-couleur='fuchsia'],
+.pastille-couleur[data-couleur='fuchsia'] {
+  --stylo: #a3159a;
+  --stylo-fond: #f8e6f7;
+}
+
+@media (prefers-color-scheme: dark) {
+  .pastille-couleur[data-couleur='bleu'] {
+    --stylo: #6f86f0;
+  }
+  :root[data-couleur='vert'],
+  .pastille-couleur[data-couleur='vert'] {
+    --stylo: #4fc27f;
+    --stylo-fond: #163324;
+  }
+  :root[data-couleur='rouge'],
+  .pastille-couleur[data-couleur='rouge'] {
+    --stylo: #f06b6b;
+    --stylo-fond: #3e1c1e;
+  }
+  :root[data-couleur='rose'],
+  .pastille-couleur[data-couleur='rose'] {
+    --stylo: #f590b5;
+    --stylo-fond: #3d1a2b;
+  }
+  :root[data-couleur='fuchsia'],
+  .pastille-couleur[data-couleur='fuchsia'] {
+    --stylo: #e57cf2;
+    --stylo-fond: #36183a;
+  }
+}
+
 *,
 *::before,
 *::after {
@@ -2389,6 +2442,27 @@ mark.exemple-douteux {
   min-height: 34px;
   padding: 0 0.8rem;
   font-size: 0.85rem;
+}
+
+/* Sélecteur de couleur : chaque pastille prend la couleur qu'elle désigne. */
+.pastilles-couleur {
+  display: flex;
+  gap: 0.55rem;
+}
+
+.pastille-couleur {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  background: var(--stylo);
+  box-shadow: 0 0 0 1px var(--trait-fort);
+  cursor: pointer;
+}
+
+.pastille-couleur[aria-checked='true'] {
+  box-shadow: 0 0 0 2px var(--encre);
 }
 
 @media (prefers-reduced-motion: reduce) {

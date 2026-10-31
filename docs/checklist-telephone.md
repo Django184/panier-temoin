@@ -43,6 +43,7 @@ Appareil : ____________________  Système : ____________________  Date : _______
 ## 6. Réglages
 
 - [ ] Désactiver « Aides » les masque partout ; les réactiver les montre toutes à nouveau.
+- [ ] Réglages → Couleur : la couleur choisie s'applique tout de suite (barre de l'onglet actif, liens, pastilles), en clair comme en sombre, et reste choisie à la réouverture de l'app.
 - [ ] Un prix inhabituel met une pastille sur Réglages et apparaît dans « Prix à confirmer ».
 - [ ] Mode sombre du téléphone : tout reste lisible ; la carte reste noir sur blanc.
 

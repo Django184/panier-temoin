@@ -86,6 +86,16 @@ export const recettes = creerMagasin<Recette[]>('panier-temoin:recettes', [], ta
 /** Recette affichée dans l'onglet Recette. */
 export const recetteActive = creerMagasin<string | null>('panier-temoin:recette-active', null);
 
+/** Couleur d'accent de l'interface (barres, liens, éléments actifs). */
+export const COULEURS = [
+  ['bleu', 'Bleu'],
+  ['vert', 'Vert'],
+  ['rouge', 'Rouge'],
+  ['rose', 'Rose'],
+  ['fuchsia', 'Fuchsia'],
+] as const;
+export type Couleur = (typeof COULEURS)[number][0];
+
 export interface Preferences {
   /** Aides et tutoriels affichés. */
   aides: boolean;
@@ -93,17 +103,20 @@ export interface Preferences {
   aidesVues: string[];
   /** Articles cochés : regroupés en bas de la liste, ou laissés dans leur rayon. */
   coches: 'en_bas' | 'en_place';
+  /** Couleur d'accent. */
+  couleur: Couleur;
 }
 
 export const preferences = creerMagasin<Preferences>(
   'panier-temoin:preferences',
-  { aides: true, aidesVues: [], coches: 'en_bas' },
+  { aides: true, aidesVues: [], coches: 'en_bas', couleur: 'bleu' },
   (v) => {
     const p = (v ?? {}) as Partial<Preferences>;
     return {
       aides: p.aides !== false,
       aidesVues: Array.isArray(p.aidesVues) ? p.aidesVues : [],
       coches: p.coches === 'en_place' ? 'en_place' : 'en_bas',
+      couleur: COULEURS.some(([c]) => c === p.couleur) ? (p.couleur as Couleur) : 'bleu',
     };
   },
 );

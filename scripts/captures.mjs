@@ -131,7 +131,7 @@ function reponseSimulee(url, entetes) {
 
 const navigateur = await chromium.launch();
 
-async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true, aides = false, coches = 'en_bas', sansAide = false } = {}) {
+async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true, aides = false, coches = 'en_bas', sansAide = false, couleur = 'bleu' } = {}) {
   const contexte = await navigateur.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
@@ -140,7 +140,7 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
     serviceWorkers: 'block',
   });
   await contexte.addInitScript(
-    ([cle, valeurSession, valeurBrouillon, avecProjet, avecAides, modeCoches, aidesCoupees]) => {
+    ([cle, valeurSession, valeurBrouillon, avecProjet, avecAides, modeCoches, aidesCoupees, couleurAccent]) => {
       if (sessionStorage.getItem('capture-pret')) return; // une seule fois par onglet
       sessionStorage.setItem('capture-pret', '1');
       if (valeurSession) window.localStorage.setItem(cle, valeurSession);
@@ -155,10 +155,11 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
           aides: !aidesCoupees,
           aidesVues: avecAides ? [] : ['ajouter', 'courses'],
           coches: modeCoches,
+          couleur: couleurAccent,
         }),
       );
     },
-    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet, aides, coches, sansAide],
+    [`sb-${REF}-auth-token`, connecte ? JSON.stringify(session()) : null, brouillon ? JSON.stringify(brouillon) : null, projet, aides, coches, sansAide, couleur],
   );
   // Tables partagées simulées (liste de courses, recettes), en mémoire.
   const tables = { courses_articles: new Map(), recettes: new Map() };
@@ -314,5 +315,11 @@ await capturer('19-courses-sans-aide', { chemin: LIEN_COURSES.slice(2), action: 
 await capturer('20-prix-sans-aide', { chemin: 'explorer', sansAide: true });
 await capturer('21-carte-sans-aide', { chemin: 'carte', sansAide: true });
 await capturer('22-reglages-sans-aide', { chemin: 'reglages', sansAide: true });
+
+// Couleurs d'accent (Réglages → Couleur).
+await capturer('23-reglages-rose', { chemin: 'reglages', couleur: 'rose' });
+await capturer('24-courses-vert-sombre', { theme: 'dark', chemin: LIEN_COURSES.slice(2), action: cocherDeux, couleur: 'vert' });
+await capturer('25-prix-fuchsia', { chemin: 'explorer', couleur: 'fuchsia' });
+await capturer('26-courses-rouge-sombre', { theme: 'dark', chemin: LIEN_COURSES.slice(2), couleur: 'rouge' });
 
 await navigateur.close();

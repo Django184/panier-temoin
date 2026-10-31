@@ -57,7 +57,7 @@ GitHub : Pages sert l'app ; Actions teste, construit, publie et maintient Supaba
 | Carte | Carte Cumulus du foyer : code-barres du numéro de carte, identique à celui de l’app Migros (points crédités ; bons bleus via l’app Migros). |
 | Ticket | Bouton « Photographier le ticket » (projet Claude), puis vérification et envoi. |
 | Prix | Recherche, favoris, derniers achats avec l’écart depuis l’achat précédent ; fiches produit et paniers types. |
-| Réglages | Aides activables, projets Claude, prix à confirmer, tickets envoyés, installation, confidentialité, compte. |
+| Réglages | Aides activables, couleur de l'interface (bleu, vert, rouge, rose, fuchsia), projets Claude, prix à confirmer, tickets envoyés, installation, confidentialité, compte. |
 
 Tickets, prix, carte Cumulus, liste de courses et recettes sont dans Supabase ; la liste et les recettes sont partagées par les comptes du foyer, en direct, avec une copie sur chaque téléphone pour les courses sans réseau (`src/donnees/synchro.ts`). Les préférences d’affichage restent sur le téléphone.
 

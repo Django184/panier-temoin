@@ -4,7 +4,12 @@ import { App } from './App.tsx';
 import { FournisseurSession } from './session.tsx';
 import { accueillirLienImport } from './lecture/claude.ts';
 import { accueillirLienCourses } from './lecture/chefFeta.ts';
+import { preferences } from './donnees/local.ts';
 import './styles.css';
+
+// Couleur et interface appliquées avant le premier affichage (pas d'éclair bleu).
+document.documentElement.dataset.couleur = preferences.lire().couleur;
+document.documentElement.dataset.aides = preferences.lire().aides ? 'oui' : 'non';
 
 // Lien « Ouvrir dans Panier Témoin » envoyé par Claude (ticket lu) : à l'ouverture
 // de l'app, ou quand l'app déjà ouverte reçoit le lien.
