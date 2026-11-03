@@ -74,7 +74,7 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Tests du lecteur de ticket
         run: npm test
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
       - name: Codes-barres EAN-13 relus par un décodeur indépendant
