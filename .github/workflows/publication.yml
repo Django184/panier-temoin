@@ -2,7 +2,8 @@
 #
 # À chaque envoi sur « main » :
 #   1. backend : migrations, tests SQL et démonstration sur un Postgres 16 ;
-#   2. app : tests du lecteur de ticket, vérification des types, build ;
+#   2. app : tests du lecteur de ticket, vérification des types, build, puis parcours de
+#      l'app construite (une violation de CSP ou une erreur de page bloque la publication) ;
 #   3. publication de l'app sur https://django184.github.io/panier-temoin/
 # La publication n'a lieu que si les deux premières étapes réussissent.
 
@@ -83,6 +84,13 @@ jobs:
           python scripts/verifier_codes.py codes-test
       - name: Vérification des types et build
         run: npm run build
+      - name: Parcours de l'app construite (CSP et erreurs de page bloquantes)
+        run: |
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+          npx vite preview --port 4173 --strictPort &
+          npx --yes wait-on --timeout 60000 http://localhost:4173/panier-temoin/
+          node scripts/captures.mjs
       - name: Préparation de la publication
         if: github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v5

@@ -1,7 +1,7 @@
 {
   "name": "panier-temoin",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Suivi participatif des prix de supermarché à partir de tickets de caisse. Projet indépendant, sans lien avec Migros.",
   "type": "module",
   "engines": {

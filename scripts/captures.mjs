@@ -131,6 +131,10 @@ function reponseSimulee(url, entetes) {
 
 const navigateur = await chromium.launch();
 
+// Toute violation de la politique de sécurité (CSP) ou erreur de page fait échouer le script :
+// le workflow de publication s'en sert pour bloquer une version qui casserait l'app.
+const problemes = [];
+
 async function capturer(nom, { theme = 'light', connecte = true, brouillon = null, chemin = '', action = null, projet = true, aides = false, coches = 'en_bas', sansAide = false, couleur = 'bleu' } = {}) {
   const contexte = await navigateur.newContext({
     viewport: { width: 390, height: 844 },
@@ -193,7 +197,13 @@ async function capturer(nom, { theme = 'light', connecte = true, brouillon = nul
     });
   });
   const page = await contexte.newPage();
-  page.on('pageerror', (e) => console.error(`[${nom}] erreur de page : ${e.message}`));
+  page.on('pageerror', (e) => {
+    console.error(`[${nom}] erreur de page : ${e.message}`);
+    problemes.push(`[${nom}] erreur de page : ${e.message}`);
+  });
+  page.on('console', (m) => {
+    if (m.type() === 'error' && /Content Security Policy/i.test(m.text())) problemes.push(`[${nom}] CSP : ${m.text()}`);
+  });
   await page.goto(`${BASE}#/${chemin}`);
   await page.waitForTimeout(800);
   if (action) await action(page);
@@ -323,3 +333,11 @@ await capturer('25-prix-fuchsia', { chemin: 'explorer', couleur: 'fuchsia' });
 await capturer('26-courses-rouge-sombre', { theme: 'dark', chemin: LIEN_COURSES.slice(2), couleur: 'rouge' });
 
 await navigateur.close();
+
+if (problemes.length) {
+  console.error(`\n${problemes.length} problème(s) :`);
+  // Annotations lisibles depuis l'API GitHub (les journaux d'Actions ne le sont pas toujours).
+  for (const p of problemes) console.log(`::error::${p.replaceAll('\n', ' ')}`);
+  process.exit(1);
+}
+console.log('\nAucune violation de CSP ni erreur de page.');

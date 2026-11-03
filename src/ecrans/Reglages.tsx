@@ -238,6 +238,7 @@ export function Reglages() {
       ) : null}
 
       <p className="discret mention">{MENTION_NON_AFFILIATION}</p>
+      <p className="discret mention">Version {__APP_VERSION__}</p>
     </div>
   );
 }
