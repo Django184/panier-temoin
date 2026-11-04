@@ -1,0 +1,56 @@
+# Remplace l'ancienne adresse (https://django184.github.io/panier-temoin/) par le passeur :
+# page qui transmet les réglages du téléphone à https://panier-temoin.pages.dev (jamais la session
+# ni la carte Cumulus) et service worker qui désinstalle l'ancienne app (ECOSYSTEME.md §7.4,
+# chantier B, étape 3). Lancement manuel uniquement, après vérification de la nouvelle adresse
+# sur les deux téléphones. Settings → Pages → Source : « GitHub Actions » (déjà le cas).
+name: Passeur de l'ancienne adresse
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: "Écrire « passeur » pour remplacer l'app de l'ancienne adresse"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    if: inputs.confirmation == 'passeur'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - name: Changement d'adresse de bout en bout
+        run: |
+          npm install --no-audit --no-fund
+          npm run build
+          npm install --no-save --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+          npx vite preview --port 4173 --strictPort &
+          npx --yes wait-on --timeout 60000 http://localhost:4173/
+          node scripts/demenagement.mjs
+
+  passeur:
+    needs: tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: passeur
+      - id: deployment
+        uses: actions/deploy-pages@v5
+      - name: Résumé
+        run: echo "## ✅ Ancienne adresse remplacée par le passeur vers https://panier-temoin.pages.dev/" >> "$GITHUB_STEP_SUMMARY"

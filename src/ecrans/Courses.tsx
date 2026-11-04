@@ -44,7 +44,7 @@ export function Courses() {
 
   // Le message de confirmation s'efface de lui-même.
   useEffect(() => {
-    if (!message?.ok) return;
+    if (!message?.ok || message.durable) return;
     const m = window.setTimeout(() => setMessage(null), 5000);
     return () => window.clearTimeout(m);
   }, [message]);

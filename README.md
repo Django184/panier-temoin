@@ -4,7 +4,7 @@ Application web installable (PWA) pour suivre l’évolution des prix de superma
 
 **Panier Témoin est un projet indépendant. Il n’est ni affilié à Migros ni soutenu par Migros ou la Fédération des coopératives Migros.** Les noms de magasins et de produits proviennent des tickets des utilisateurs.
 
-Adresse de l’app : **https://django184.github.io/panier-temoin/**
+Adresse de l’app : **https://panier-temoin.pages.dev/** (depuis 0.7.0 ; avant : `django184.github.io/panier-temoin/`, voir « Changement d’adresse »).
 
 ## Sommaire
 
@@ -26,11 +26,11 @@ Téléphone                                                        Supabase (Zur
   → envoi des seules lignes validées ────────────────────────────→ Postgres + RLS :
                                                                      soumettre_ticket (doublons,
   ← courbes, comparaisons, paniers ←──────────────────────────────── aberrations), statistiques
-GitHub : Pages sert l'app ; Actions teste, construit, publie et maintient Supabase éveillé.
+Cloudflare Pages sert l'app ; GitHub Actions teste, construit, publie et maintient Supabase éveillé.
 ```
 
 - La photo est lue par Claude, dans un projet du compte Claude de l’utilisateur (abonnement existant, sans frais supplémentaires). L’app ne voit jamais la photo.
-- Les instructions du projet (`INSTRUCTIONS_PROJET` dans `src/lib/importClaude.ts`, copiables depuis l’app) font répondre Claude par un lien `https://django184.github.io/panier-temoin/#/import/{…}` qui contient le ticket lu au format JSON compact. Le lien rouvre l’app sur l’écran de vérification. Le même JSON est donné dans un bloc de code : « Coller la réponse de Claude » le reprend si le lien ne s’ouvre pas.
+- Les instructions du projet (`INSTRUCTIONS_PROJET` dans `src/lib/importClaude.ts`, copiables depuis l’app) font répondre Claude par un lien `https://panier-temoin.pages.dev/#/import/{…}` qui contient le ticket lu au format JSON compact. Le lien rouvre l’app sur l’écran de vérification. Le même JSON est donné dans un bloc de code : « Coller la réponse de Claude » le reprend si le lien ne s’ouvre pas.
 - Les instructions interdisent à Claude de recopier le numéro Cumulus et les données de paiement, et l’app ne les enregistre pas.
 - Toute écriture passe par la fonction `soumettre_ticket`, qui refuse les doublons et met de côté les prix inhabituels.
 - La consultation des prix est ouverte sans compte ; l’ajout de tickets est réservé aux comptes créés à la main.
@@ -75,13 +75,15 @@ Ces étapes ont déjà été faites pour ce dépôt ; elles servent à tout réi
 
 ### 2. GitHub
 
-1. Dépôt **public** (GitHub Pages gratuit n’est disponible que pour les dépôts publics). Le code ne contient aucun secret : la clé « publishable » est faite pour être publique.
-2. **Settings → Pages → Source : GitHub Actions**.
+1. Le dépôt peut être public ou privé. Le code ne contient aucun secret : la clé « publishable » est faite pour être publique.
+2. Secrets du dépôt (**Settings → Secrets and variables → Actions → Repository secrets**) : `CLOUDFLARE_API_TOKEN` (permission Cloudflare Pages · Edit) et `CLOUDFLARE_ACCOUNT_ID`.
 3. Chaque envoi sur `main` lance le workflow « Tests et publication » :
    - backend : migrations, tests SQL et démonstration sur Postgres 16 ;
-   - app : tests du lecteur, vérification des types, build ;
-   - publication sur GitHub Pages si tout est vert.
-4. Aucun secret n’est nécessaire.
+   - app : tests, vérification des types, build, parcours de l’app construite (CSP), changement d’adresse de bout en bout ;
+   - publication sur Cloudflare Pages si tout est vert (le projet `panier-temoin` est créé s’il manque) ;
+   - vérification du site publié (version servie, en-têtes, manifeste, liens de Claude, hors ligne) ;
+   - résultat dans `statut.json` sur la branche `ci-statut`.
+4. Les en-têtes HTTP (CSP, `frame-ancestors`, `nosniff`…) sont écrits au build dans `dist/_headers` par `vite.config.ts`.
 5. Le workflow « Maintien Supabase » interroge la base deux fois par semaine pour éviter la mise en pause du projet gratuit.
 
 ### 3. Projet Claude (une fois par utilisateur)
@@ -99,6 +101,14 @@ Dans l’app : onglet **Ajouter → Configurer le projet Claude** (ou onglet Pro
 **Android (Chrome)** : ouvrir l’adresse, menu ⋮, « Installer l’application ».
 
 Puis se connecter dans l’onglet Profil avec l’e-mail et le mot de passe du compte. La liste des vérifications à faire sur chaque téléphone est dans [`docs/checklist-telephone.md`](docs/checklist-telephone.md).
+
+### Changement d’adresse (0.7.0)
+
+L’app a quitté `https://django184.github.io/panier-temoin/`, origine partagée avec d’autres apps (D-004 de l’écosystème). Sur chaque téléphone :
+
+1. Ouvrir une fois l’ancienne app avec du réseau. Une fois le passeur publié (workflow « Passeur de l’ancienne adresse », lancé à la main), elle se désinstalle et ouvre la nouvelle adresse en y reprenant les réglages, la couleur, les adresses des projets Claude, le brouillon de ticket et les changements de liste pas encore envoyés. La session et la carte Cumulus ne sont jamais transmises.
+2. Se connecter dans Réglages, puis installer l’app depuis la nouvelle adresse et supprimer l’ancienne icône.
+3. Dans Réglages, recopier les instructions des **deux** projets Claude (tickets et Chef Feta) : les liens qu’ils renvoient doivent pointer vers la nouvelle adresse. Les anciens liens restent valables : le passeur les fait suivre.
 
 ## Entretien
 
@@ -119,13 +129,13 @@ Coût d’exploitation : **0 CHF par mois** pour deux utilisateurs.
 | Service | Offre | Usage prévu | Coût |
 | --- | --- | --- | --- |
 | Supabase (Zurich) | Plan gratuit : base de 500 Mo, 50 000 utilisateurs actifs par mois ; pause après une semaine sans activité | Environ 3 Ko par ticket : 500 Mo représentent plus de 100 000 tickets | 0 CHF |
-| GitHub Pages | Gratuit pour un dépôt public ; site de 1 Go au plus, 100 Go de trafic par mois (limite souple) | Moins de 1 Mo | 0 CHF |
-| GitHub Actions | Gratuit pour un dépôt public avec les machines standard | Quelques minutes par envoi, deux courtes tâches par semaine | 0 CHF |
+| Cloudflare Pages | Offre gratuite : 20 000 fichiers et 25 Mio par fichier au plus, publications directes depuis la CI | Moins de 1 Mo | 0 CHF |
+| GitHub Actions | Gratuit pour un dépôt public ; 2 000 minutes par mois pour un dépôt privé (compte gratuit) | Quelques minutes par envoi, deux courtes tâches par semaine | 0 CHF |
 | Lecture des tickets (Claude) | Projet Claude dans un abonnement Claude existant, dans ses limites d’usage | Un message par ticket | 0 CHF supplémentaire |
 
 Pourquoi un projet Claude et pas une lecture automatique par API : l’API Claude est facturée à part de l’abonnement, les conditions du plan gratuit de Gemini en interdisent l’usage en Suisse et dans l’UE, et l’offre gratuite de Mistral, essayée, n’a pas donné de lecture fiable.
 
-Sources : [tarifs Supabase](https://supabase.com/pricing), [limites de GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/github-pages-limits), [facturation de GitHub Actions](https://docs.github.com/en/billing/concepts/product-billing/github-actions), relevés du 13 octobre 2026.
+Sources : [tarifs Supabase](https://supabase.com/pricing), [limites de Cloudflare Pages](https://developers.cloudflare.com/pages/platform/limits/) (relevées le 4 novembre 2026), [facturation de GitHub Actions](https://docs.github.com/en/billing/concepts/product-billing/github-actions), relevés du 13 octobre 2026.
 
 Seul déclencheur de coût prévisible : passer au plan Supabase Pro (25 USD par mois) pour supprimer la mise en pause, inutile tant que la tâche de maintien fonctionne.
 
@@ -135,7 +145,7 @@ Prérequis : Node.js 22.18 ou plus.
 
 ```bash
 npm install
-npm run dev        # app sur http://localhost:5173/panier-temoin/
+npm run dev        # app sur http://localhost:5173/
 npm test           # tests du lecteur de ticket (sans dépendance)
 npm run build      # vérification des types et build de production
 ```

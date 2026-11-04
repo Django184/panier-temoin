@@ -8,7 +8,8 @@ import { liste, nouvelId, recetteActive, recettes } from '../donnees/local.ts';
 const CLE_MESSAGE = 'panier-temoin:courses-message';
 const HISTORIQUE_MAX = 60;
 
-export type MessageCourses = { message: string; ok: boolean };
+/** `durable` : message à lire tranquillement (changement d'adresse), pas effacé au bout de 5 s. */
+export type MessageCourses = { message: string; ok: boolean; durable?: boolean };
 
 /** Met les articles d'une recette dans la liste et l'affiche dans l'onglet Recette. */
 export function chargerRecette(recette: Recette): void {

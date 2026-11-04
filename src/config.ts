@@ -11,3 +11,8 @@ export const NOM_APP = 'Panier Témoin';
 export const MENTION_NON_AFFILIATION =
   'Projet indépendant, sans lien avec Migros ni avec la Fédération des coopératives Migros. ' +
   'Les noms de magasins et de produits proviennent des tickets des utilisateurs.';
+
+// Adresse publique de l'app (Cloudflare Pages depuis 0.7.0 ; avant : django184.github.io/panier-temoin/).
+// Elle figure dans les liens que Claude renvoie (tickets, recettes) : la changer demande de recopier
+// les instructions des deux projets Claude depuis Réglages.
+export const ADRESSE_APP = 'https://panier-temoin.pages.dev/';

@@ -1,7 +1,7 @@
 {
   "name": "panier-temoin",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Suivi participatif des prix de supermarché à partir de tickets de caisse. Projet indépendant, sans lien avec Migros.",
   "type": "module",
   "engines": {
@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "vite",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test src/lib/lecteur.test.ts src/lib/courses.test.ts src/lib/codes.test.ts src/donnees/fusion.test.ts",
+    "test": "node --test src/lib/lecteur.test.ts src/lib/courses.test.ts src/lib/codes.test.ts src/donnees/fusion.test.ts src/lib/demenagement.test.ts",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview"
   },

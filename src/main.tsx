@@ -1,3 +1,5 @@
+// En premier : les données venues de l'ancienne adresse sont écrites avant toute lecture du stockage.
+import './demenagement.ts';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';

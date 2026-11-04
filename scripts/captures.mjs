@@ -11,7 +11,7 @@ import { mkdirSync } from 'node:fs';
 import { lireTicket } from '../src/lib/lecteurTicket.ts';
 import { TICKET_2_IDEAL } from '../src/lib/fixtures/tickets.ts';
 
-const BASE = 'http://localhost:4173/panier-temoin/';
+const BASE = process.env.BASE ?? 'http://localhost:4173/';
 const REF = 'tpovnthrvlajmyjrfltn';
 const SORTIE = 'captures';
 mkdirSync(SORTIE, { recursive: true });

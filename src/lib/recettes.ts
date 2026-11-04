@@ -9,9 +9,10 @@
 // Les liens de la première version (r et i seulement) restent acceptés.
 
 import { decoderLien } from './importClaude.ts';
+import { ADRESSE_APP } from '../config.ts';
 
 /** Début des liens produits par Chef Feta. */
-export const ADRESSE_RECETTE = 'https://django184.github.io/panier-temoin/#/courses/';
+export const ADRESSE_RECETTE = `${ADRESSE_APP}#/courses/`;
 
 export interface Ingredient {
   rayon: string;

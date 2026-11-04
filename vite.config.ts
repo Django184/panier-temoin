@@ -4,15 +4,17 @@ import { VitePWA } from 'vite-plugin-pwa';
 import { readFileSync } from 'node:fs';
 import type { Plugin } from 'vite';
 
-// L'app est publiée sur GitHub Pages, sous https://django184.github.io/panier-temoin/
-const BASE = '/panier-temoin/';
+// L'app est publiée à la racine de https://panier-temoin.pages.dev (Cloudflare Pages, D-004, D-013).
+// Jusqu'en 0.6.0 : GitHub Pages, sous https://django184.github.io/panier-temoin/ (voir passeur/).
+const BASE = '/';
 
 // Version de l'app : une seule source, package.json (affichée dans Réglages).
 const VERSION = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).version as string;
 
-// Politique de sécurité du contenu (ECOSYSTEME.md §8.3, D-009). GitHub Pages n'envoie pas
-// d'en-têtes personnalisés : la politique est posée en balise <meta>, au build seulement
-// (le serveur de développement de Vite injecte des scripts en ligne).
+// Politique de sécurité du contenu (ECOSYSTEME.md §8.3, D-009), au build seulement (le serveur
+// de développement de Vite injecte des scripts en ligne). Une seule source pour deux usages :
+// la balise <meta> (vérifiée en CI par « vite preview ») et l'en-tête HTTP du fichier _headers
+// servi par Cloudflare, qui ajoute frame-ancestors (sans effet en <meta>).
 const SUPABASE = 'tpovnthrvlajmyjrfltn.supabase.co';
 const CSP = [
   "default-src 'self'",
@@ -28,6 +30,20 @@ const CSP = [
   "form-action 'self'",
 ].join('; ');
 
+const EN_TETES = `# En-têtes HTTP servis par Cloudflare Pages (généré par vite.config.ts)
+/*
+  Content-Security-Policy: ${CSP}; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
+
+/sw.js
+  Cache-Control: no-cache
+`;
+
+// Version servie, lue par la CI pour savoir quand la publication est en ligne.
+const COMMIT = (process.env.GITHUB_SHA ?? 'local').slice(0, 7);
+
 function politiqueDeSecurite(): Plugin {
   return {
     name: 'politique-de-securite',
@@ -36,6 +52,10 @@ function politiqueDeSecurite(): Plugin {
       { tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: CSP }, injectTo: 'head-prepend' },
       { tag: 'meta', attrs: { name: 'referrer', content: 'strict-origin-when-cross-origin' }, injectTo: 'head' },
     ],
+    generateBundle() {
+      this.emitFile({ type: 'asset', fileName: '_headers', source: EN_TETES });
+      this.emitFile({ type: 'asset', fileName: 'version.json', source: JSON.stringify({ version: VERSION, commit: COMMIT }) + '\n' });
+    },
   };
 }
 
@@ -54,6 +74,7 @@ export default defineConfig({
         short_name: 'Panier Témoin',
         description: 'Suivre l’évolution des prix de supermarché à partir de vos tickets de caisse.',
         lang: 'fr-CH',
+        id: BASE,
         start_url: BASE,
         scope: BASE,
         display: 'standalone',

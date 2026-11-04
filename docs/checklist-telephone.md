@@ -1,6 +1,6 @@
 # Checklist de test sur téléphone
 
-À faire une fois par téléphone, avec l’app publiée sur https://django184.github.io/panier-temoin/. Noter le modèle et la version du système.
+À faire une fois par téléphone, avec l’app publiée sur https://panier-temoin.pages.dev/. Noter le modèle et la version du système.
 
 Appareil : ____________________  Système : ____________________  Date : __________
 

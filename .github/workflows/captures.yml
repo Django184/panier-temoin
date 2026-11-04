@@ -34,7 +34,7 @@ jobs:
       - name: Captures
         run: |
           npx vite preview --port 4173 --strictPort &
-          npx --yes wait-on --timeout 60000 http://localhost:4173/panier-temoin/
+          npx --yes wait-on --timeout 60000 http://localhost:4173/
           node scripts/captures.mjs
       - name: Publication sur la branche « captures »
         run: |

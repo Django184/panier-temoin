@@ -10,9 +10,10 @@
 import type { FormatMagasin, MethodeExtraction, TicketBrouillon } from './types.ts';
 import { versCentimes } from './montants.ts';
 import { construireLigne } from './lecteurTicket.ts';
+import { ADRESSE_APP } from '../config.ts';
 
 /** Début des liens d'import produits par Claude. */
-export const ADRESSE_IMPORT = 'https://django184.github.io/panier-temoin/#/import/';
+export const ADRESSE_IMPORT = `${ADRESSE_APP}#/import/`;
 
 export const INSTRUCTIONS_PROJET = `Tu lis des tickets de caisse de supermarchés Migros (Suisse) pour l'app Panier Témoin. Chaque message contient la photo d'un ticket. Pour chaque photo, suis exactement ces règles, sans poser de question.
 
